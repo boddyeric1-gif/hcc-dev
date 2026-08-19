@@ -4,7 +4,6 @@ import { RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
 
 import SceneFrame from "./SceneFrame";
-import LightShafts from "./Volumetrics";
 import { makeScreenTexture } from "./screenTexture";
 import type { Quality } from "@/lib/hcc/types";
 
@@ -27,7 +26,7 @@ function Room({ accent }: { accent: string }) {
     <group>
       <mesh position={[0, 2.2, -2.1]} receiveShadow>
         <planeGeometry args={[12, 5]} />
-        <meshStandardMaterial color="#ff0000" roughness={0.88} metalness={0.08} />
+        <meshStandardMaterial color="#101722" roughness={0.88} metalness={0.08} />
       </mesh>
       <mesh position={[-3.4, 2.2, -2.08]}>
         <planeGeometry args={[0.04, 3.2]} />
@@ -278,16 +277,6 @@ export default function RigScene({
       floor={24}
     >
       <Room accent={v.accent} />
-      <LightShafts
-        positions={[
-          [-1.1, 2.9, -0.9],
-          [1.1, 2.9, -0.9],
-        ]}
-        color="#bcd9ff"
-        height={2.9}
-        radius={0.75}
-        opacity={quality === "performance" ? 0.012 : 0.022}
-      />
       <Desk tier={v.desk} accent={v.accent} mat={v.deskmat} />
       {monitors.map((m, i) => (
         <Monitor key={i} position={m.p} rotation={m.r} size={m.s} tex={m.t} accent={v.accent} />
