@@ -8,6 +8,7 @@ import { useGame } from "@/lib/hcc/store";
 import { COINS, CATALOG, LIGHT_HEX, itemById } from "@/lib/hcc/catalog";
 import { deriveMining } from "@/lib/hcc/state";
 import { priceHistory, sellQuote } from "@/lib/hcc/market";
+import { activeNews, recentNews } from "@/lib/hcc/news";
 import type { Coin } from "@/lib/hcc/types";
 import { cn } from "@/lib/utils";
 
@@ -61,6 +62,8 @@ export default function MiningTab() {
     };
   }, [units, read, state.installed.lighting]);
 
+  const news = useMemo(() => recentNews(now, 5), [now]);
+  const live = useMemo(() => new Set(activeNews(now).map((e) => e.id)), [now]);
   const balance = state.mining.balances[state.mining.coin];
   const sq = balance > 0 ? sellQuote(state.mining.coin, now, balance) : null;
 
@@ -148,6 +151,29 @@ export default function MiningTab() {
         )}
       </Panel>
 
+      <Panel label="MARKET WIRE" className="p-3">
+        {news.length === 0 && <p className="text-[11px] text-muted-foreground">Wire quiet. No active shocks.</p>}
+        <ul className="space-y-2">
+          {news.map((e) => (
+            <li
+              key={e.id}
+              className={cn(
+                "rounded-md border p-2",
+                live.has(e.id) ? "border-hud-amber/50 bg-hud-amber/5" : "border-border/60 bg-background/40 opacity-70",
+              )}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <p className="min-w-0 text-[11px] text-foreground">{e.headline}</p>
+                <Chip tone={live.has(e.id) ? (e.tone === "bear" ? "red" : e.tone === "bull" ? "green" : "amber") : "dim"}>
+                  {live.has(e.id) ? (e.scope === "ALL" ? "MACRO" : e.scope) : "SETTLED"}
+                </Chip>
+              </div>
+              <p className="mt-0.5 text-[10px] text-muted-foreground">{e.detail}</p>
+            </li>
+          ))}
+        </ul>
+      </Panel>
+
       <Panel label="FARM TELEMETRY" className="p-3">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="HASHRATE" value={`${read.effectiveHash.toFixed(0)} MH/s`} hint={`raw ${read.hash}`} />
@@ -175,6 +201,11 @@ export default function MiningTab() {
           <span className="text-muted-foreground">
             {read.contract.rate.toFixed(3)} cr/kWh now (base {read.contract.baseRate.toFixed(2)})
           </span>
+          {Math.abs(read.contract.macroRateMul - 1) > 0.02 && (
+            <Chip tone={read.contract.macroRateMul > 1 ? "red" : "green"}>
+              MACRO {read.contract.macroRateMul.toFixed(2)}x
+            </Chip>
+          )}
           {read.overageW > 0 && (
             <Chip tone="red">OVERAGE {(read.overageW / 1000).toFixed(1)} kW @ {read.contract.overageMul}x</Chip>
           )}
