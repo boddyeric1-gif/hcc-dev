@@ -42,7 +42,7 @@ export const stamp = (): string =>
 export const initialState = (): GameState => ({
   phase: "offline",
   tab: "command",
-  credits: 1200,
+  credits: 2500,
   intel: 0,
   heat: 0,
   takedowns: 0,
