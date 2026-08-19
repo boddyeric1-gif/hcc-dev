@@ -66,6 +66,8 @@ export type RigStats = {
   readonly bounty: number;
   readonly miningMul: number;
   readonly coolingWatts: number;
+  /** how many cases can stay warm at once */
+  readonly opSlots: number;
 };
 
 export type MiningSpec = {
@@ -109,6 +111,8 @@ export type Quality = "ultra" | "balanced" | "performance";
 export type MiningState = {
   readonly coin: Coin;
   readonly units: Readonly<Record<string, number>>;
+  /** per hardware type: how many of those units are assigned to each coin */
+  readonly alloc: Readonly<Record<string, Partial<Record<Coin, number>>>>;
   readonly contract: string;
   readonly balances: Readonly<Record<Coin, number>>;
   readonly lastTick: number;
@@ -129,6 +133,8 @@ export type GameState = {
   readonly heat: number;
   readonly takedowns: number;
   readonly selected: string | null;
+  /** cases currently being worked — limited by opSlots */
+  readonly active: readonly string[];
   readonly generated: readonly Target[];
   readonly progress: Readonly<Record<string, TargetProgress>>;
   readonly owned: readonly string[];
