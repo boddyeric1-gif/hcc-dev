@@ -161,9 +161,9 @@ export default function MiningScene({
           [1.5, 3.1, -1.1],
         ]}
         color={hot ? "#ff7a8c" : "#bcd9ff"}
-        height={3.1}
-        radius={0.85}
-        opacity={quality === "performance" ? 0.014 : 0.026}
+        height={3.0}
+        radius={0.5}
+        opacity={quality === "performance" ? 0.008 : 0.014}
       />
 
       {Array.from({ length: shelves }).map((_, i) => (
