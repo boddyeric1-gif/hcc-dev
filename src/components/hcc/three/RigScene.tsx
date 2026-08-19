@@ -27,7 +27,7 @@ function Room({ accent }: { accent: string }) {
     <group>
       <mesh position={[0, 2.2, -2.1]} receiveShadow>
         <planeGeometry args={[12, 5]} />
-        <meshStandardMaterial color="#161e29" roughness={0.88} metalness={0.08} />
+        <meshStandardMaterial color="#101722" roughness={0.88} metalness={0.08} />
       </mesh>
       <mesh position={[-3.4, 2.2, -2.08]}>
         <planeGeometry args={[0.04, 3.2]} />
@@ -286,7 +286,7 @@ export default function RigScene({
         color="#bcd9ff"
         height={2.9}
         radius={0.75}
-        opacity={quality === "performance" ? 0.028 : 0.055}
+        opacity={quality === "performance" ? 0.012 : 0.022}
       />
       <Desk tier={v.desk} accent={v.accent} mat={v.deskmat} />
       {monitors.map((m, i) => (
@@ -301,7 +301,7 @@ export default function RigScene({
         position={[0, 3.2, 1.4]}
         angle={0.7}
         penumbra={0.9}
-        intensity={40}
+        intensity={26}
         color="#9fd8ff"
         castShadow={quality !== "performance"}
         shadow-mapSize={[1024, 1024]}

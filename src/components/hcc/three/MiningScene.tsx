@@ -151,7 +151,7 @@ export default function MiningScene({
     >
       <mesh position={[0, 2.2, -2.4]} receiveShadow>
         <planeGeometry args={[14, 5]} />
-        <meshStandardMaterial color={hot ? "#241318" : "#141c26"} roughness={0.9} />
+        <meshStandardMaterial color={hot ? "#1c1014" : "#101821"} roughness={0.9} />
       </mesh>
 
       <LightShafts
@@ -163,7 +163,7 @@ export default function MiningScene({
         color={hot ? "#ff7a8c" : "#bcd9ff"}
         height={3.1}
         radius={0.85}
-        opacity={quality === "performance" ? 0.03 : 0.06}
+        opacity={quality === "performance" ? 0.014 : 0.026}
       />
 
       {Array.from({ length: shelves }).map((_, i) => (
@@ -194,7 +194,7 @@ export default function MiningScene({
         position={[0, 3.4, 1.6]}
         angle={0.9}
         penumbra={1}
-        intensity={34}
+        intensity={22}
         color="#cfe6ff"
         castShadow={quality !== "performance"}
       />

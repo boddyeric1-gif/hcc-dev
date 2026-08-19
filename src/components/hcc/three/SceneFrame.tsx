@@ -50,11 +50,11 @@ export default function SceneFrame({
         antialias: quality !== "performance",
         powerPreference: "high-performance",
         toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: 1.15 * b,
+        toneMappingExposure: 0.95 * b,
       }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.15 * b;
+        gl.toneMappingExposure = 0.95 * b;
       }}
     >
       <color attach="background" args={["#080d14"]} />
@@ -73,13 +73,13 @@ export default function SceneFrame({
       />
 
       {/* base illumination — lifted so hardware reads clearly on any display */}
-      <ambientLight intensity={0.62 * b} color="#8fb8dc" />
-      <hemisphereLight args={["#9ec9ff", "#141b24", 0.85 * b]} />
-      <directionalLight position={[3.5, 5, 3]} intensity={0.9 * b} color="#cfe4ff" />
-      <directionalLight position={[-4, 3, -2]} intensity={0.45 * b} color="#5f8dff" />
+      <ambientLight intensity={0.3 * b} color="#8fb8dc" />
+      <hemisphereLight args={["#9ec9ff", "#0d131b", 0.4 * b]} />
+      <directionalLight position={[3.5, 5, 3]} intensity={0.5 * b} color="#cfe4ff" />
+      <directionalLight position={[-4, 3, -2]} intensity={0.28 * b} color="#5f8dff" />
 
       <Suspense fallback={null}>
-        <Environment preset="night" environmentIntensity={1.35 * b} />
+        <Environment preset="night" environmentIntensity={0.85 * b} />
         {floor > 0 && (
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]} receiveShadow>
             <planeGeometry args={[floor, floor]} />
