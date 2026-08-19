@@ -1,9 +1,12 @@
+import { useEffect } from "react";
 import {
   Boxes,
   FileSearch,
   Cpu,
   Crosshair,
   ShoppingCart,
+  Volume2,
+  VolumeX,
   TerminalSquare,
   Wrench,
 } from "lucide-react";
@@ -17,7 +20,8 @@ import ShopTab from "./tabs/ShopTab";
 import TargetsTab from "./tabs/TargetsTab";
 import ToolsTab from "./tabs/ToolsTab";
 import { useGame } from "@/lib/hcc/store";
-import { rankName } from "@/lib/hcc/state";
+import { audio } from "@/lib/hcc/audio";
+import { deriveMining, rankName } from "@/lib/hcc/state";
 import type { TabId } from "@/lib/hcc/types";
 import { cn } from "@/lib/utils";
 
@@ -33,9 +37,37 @@ const TABS: { id: TabId; label: string; icon: typeof Cpu }[] = [
 
 export default function ConsoleShell() {
   const { state, dispatch } = useGame();
+  const online = state.phase === "online";
 
-  if (state.phase !== "online") {
-    return <BootScreen onDone={() => dispatch({ type: "boot" })} />;
+  // keep the synth engine in sync with saved preferences
+  useEffect(() => {
+    audio.setSettings(state.audio);
+  }, [state.audio]);
+
+  // ambience follows the farm: more units, more load, more heat = louder room
+  useEffect(() => {
+    if (!online) return;
+    const tick = () => {
+      const read = deriveMining(state, Date.now());
+      const units = Object.values(state.mining.units).reduce((a, b) => a + b, 0);
+      audio.setFarm({
+        units,
+        load: Math.min(1, read.watts / Math.max(1, read.capacityW)),
+        heat: Math.min(1, read.heatLoad / 40),
+        online: read.effectiveHash > 0,
+      });
+    };
+    tick();
+    const id = window.setInterval(tick, 4000);
+    return () => window.clearInterval(id);
+  }, [online, state]);
+
+  if (!online) {
+    return (
+      <BootScreen
+        onDone={(handle) => dispatch({ type: "login", handle })}
+      />
+    );
   }
 
   return (
@@ -52,6 +84,19 @@ export default function ConsoleShell() {
             </span>
           </div>
           <div className="flex items-center gap-3 text-[10px] tabular-nums">
+            <button
+              type="button"
+              aria-label={state.audio.muted ? "Unmute audio" : "Mute audio"}
+              onClick={() => {
+                audio.start();
+                audio.resume();
+                dispatch({ type: "audio", patch: { muted: !state.audio.muted } });
+              }}
+              className="text-muted-foreground transition-colors hover:text-hud-cyan"
+            >
+              {state.audio.muted ? <VolumeX className="size-4" strokeWidth={1.6} /> : <Volume2 className="size-4" strokeWidth={1.6} />}
+            </button>
+            {state.operator && <span className="hidden text-hud-cyan sm:inline">{state.operator}</span>}
             <span className="text-hud-violet">{rankName(state.intel)}</span>
             <span className="text-hud-green">{Math.round(state.credits).toLocaleString()} cr</span>
             <span className={cn(state.heat > 66 ? "text-hud-red" : state.heat > 33 ? "text-hud-amber" : "text-hud-cyan")}>
@@ -80,7 +125,10 @@ export default function ConsoleShell() {
               <button
                 key={t.id}
                 type="button"
-                onClick={() => dispatch({ type: "tab", tab: t.id })}
+                onClick={() => {
+                  audio.sfx("tab");
+                  dispatch({ type: "tab", tab: t.id });
+                }}
                 className={cn(
                   "flex min-w-[58px] flex-1 flex-col items-center gap-1 rounded-md border px-2 py-1.5 transition-colors",
                   active

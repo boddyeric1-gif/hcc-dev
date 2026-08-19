@@ -1,17 +1,20 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { ClientOnly } from "@tanstack/react-router";
 
-import { Bar, Chip, HudButton, Panel, Stat } from "../ui";
+import { Bar, Chip, HudButton, Panel, Sparkline, Stat } from "../ui";
+import SceneBrightness from "../SceneBrightness";
 import type { MiningVisual } from "../three/MiningScene";
 import { useGame } from "@/lib/hcc/store";
-import { COINS, LIGHT_HEX, itemById } from "@/lib/hcc/catalog";
+import { COINS, CATALOG, LIGHT_HEX, itemById } from "@/lib/hcc/catalog";
 import { deriveMining } from "@/lib/hcc/state";
+import { priceHistory, sellQuote } from "@/lib/hcc/market";
 import type { Coin } from "@/lib/hcc/types";
 import { cn } from "@/lib/utils";
 
 const MiningScene = lazy(() => import("../three/MiningScene"));
 
 const COIN_LIST: Coin[] = ["BTC", "ETH", "GHST"];
+const CONTRACTS = CATALOG.filter((i) => i.mining?.kind === "contract");
 
 function SceneFallback() {
   return (
@@ -31,7 +34,7 @@ export default function MiningTab() {
   }, []);
 
   const read = useMemo(() => deriveMining(state, now), [state, now]);
-  const contract = itemById(state.mining.contract);
+  const history = useMemo(() => priceHistory(state.mining.coin, now), [state.mining.coin, now]);
 
   const units = Object.entries(state.mining.units).filter(([, n]) => n > 0);
   const visual: MiningVisual = useMemo(() => {
@@ -59,20 +62,21 @@ export default function MiningTab() {
   }, [units, read, state.installed.lighting]);
 
   const balance = state.mining.balances[state.mining.coin];
+  const sq = balance > 0 ? sellQuote(state.mining.coin, now, balance) : null;
 
   return (
     <div className="space-y-3">
-      <Panel label="MINING FARM — LIVE RENDER">
+      <Panel label="MINING FARM — LIVE RENDER" right={<SceneBrightness />}>
         <div className="h-[42vh] min-h-[260px] w-full">
           <ClientOnly fallback={<SceneFallback />}>
             <Suspense fallback={<SceneFallback />}>
-              <MiningScene v={visual} quality={state.quality} />
+              <MiningScene v={visual} quality={state.quality} brightness={state.brightness} />
             </Suspense>
           </ClientOnly>
         </div>
       </Panel>
 
-      <Panel label="ASSET" className="p-3">
+      <Panel label="MARKET" className="p-3">
         <div className="grid grid-cols-3 gap-2">
           {COIN_LIST.map((c) => (
             <button
@@ -89,20 +93,59 @@ export default function MiningTab() {
             </button>
           ))}
         </div>
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="PRICE" value={`${Math.round(read.price).toLocaleString()} cr`} tone="amber" />
-          <Stat label="BALANCE" value={balance.toFixed(6)} tone="green" />
-          <Stat label="NET / HR" value={`${Math.round(read.netPerSec * 3600).toLocaleString()} cr`} tone={read.netPerSec >= 0 ? "green" : "red"} />
-          <Stat label="POWER COST" value={`${(read.costPerSec * 3600).toFixed(0)} cr/hr`} tone="red" />
+
+        <div className="mt-3 rounded-md border border-border/60 bg-background/40 p-2">
+          <div className="flex items-baseline justify-between">
+            <span className="text-[10px] tracking-[0.2em] text-muted-foreground">
+              {state.mining.coin} / CR — 10 HR
+            </span>
+            <span className={cn("text-[11px] tabular-nums", read.change24h >= 0 ? "text-hud-green" : "text-hud-red")}>
+              {read.change24h >= 0 ? "+" : ""}
+              {(read.change24h * 100).toFixed(2)}% 24h
+            </span>
+          </div>
+          <Sparkline values={history} className="mt-2 h-14 w-full" up={read.change24h >= 0} />
         </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <Stat label="BID" value={`${Math.round(read.bid).toLocaleString()} cr`} tone="green" />
+          <Stat label="ASK" value={`${Math.round(read.ask).toLocaleString()} cr`} tone="red" />
+          <Stat label="SPREAD" value={`${(read.spreadPct * 100).toFixed(2)}%`} tone="amber" />
+          <Stat
+            label="REGIME"
+            value={read.regime}
+            tone={read.regime === "SPIKE" ? "red" : read.regime === "TRENDING" ? "amber" : "cyan"}
+          />
+          <Stat label="DIFFICULTY" value={`${read.difficulty.toFixed(3)}x`} tone="violet" hint="yield divisor" />
+          <Stat label="BALANCE" value={balance.toFixed(6)} tone="green" />
+          <Stat
+            label="BREAK-EVEN"
+            value={read.breakEven > 0 ? `${Math.round(read.breakEven).toLocaleString()} cr` : "—"}
+            hint="price to cover power"
+            tone={read.breakEven > read.bid ? "red" : "green"}
+          />
+          <Stat
+            label="PROJECTED / DAY"
+            value={`${Math.round(read.dailyNet).toLocaleString()} cr`}
+            tone={read.dailyNet >= 0 ? "green" : "red"}
+          />
+        </div>
+
         <HudButton
           tone="green"
           className="mt-3 w-full"
           disabled={balance <= 0}
-          onClick={() => dispatch({ type: "sell", coin: state.mining.coin, price: read.price })}
+          onClick={() => dispatch({ type: "sell", coin: state.mining.coin, at: Date.now() })}
         >
-          Sell {balance.toFixed(6)} {state.mining.coin}
+          {sq
+            ? `Sell ${balance.toFixed(6)} ${state.mining.coin} → ${Math.round(sq.gross).toLocaleString()} cr`
+            : `No ${state.mining.coin} to sell`}
         </HudButton>
+        {sq && sq.slip > 0.0005 && (
+          <p className="mt-1 text-[10px] text-hud-amber">
+            Order size walks the book — {(sq.slip * 100).toFixed(2)}% slippage on top of the spread.
+          </p>
+        )}
       </Panel>
 
       <Panel label="FARM TELEMETRY" className="p-3">
@@ -120,8 +163,58 @@ export default function MiningTab() {
           <Bar value={read.throttle * 100} tone={read.throttle > 0.85 ? "green" : read.throttle > 0.5 ? "amber" : "red"} />
         </div>
         <p className="mt-2 text-[10px] text-muted-foreground">
-          Contract: {contract?.name} · {contract?.mining?.pricePerKwh} cr/kWh
+          Limiting factor:{" "}
+          <span className={read.limiter === "NONE" ? "text-hud-green" : "text-hud-amber"}>{read.limiter}</span>
+          {read.hash > 0 && ` · ${(read.watts / Math.max(1, read.effectiveHash)).toFixed(1)} W per MH/s`}
         </p>
+      </Panel>
+
+      <Panel label="POWER CONTRACT" className="p-3">
+        <div className="flex flex-wrap items-center gap-2 text-[10px]">
+          <Chip tone={read.contract.peak ? "red" : "green"}>{read.contract.peak ? "PEAK WINDOW" : "OFF-PEAK"}</Chip>
+          <span className="text-muted-foreground">
+            {read.contract.rate.toFixed(3)} cr/kWh now (base {read.contract.baseRate.toFixed(2)})
+          </span>
+          {read.overageW > 0 && (
+            <Chip tone="red">OVERAGE {(read.overageW / 1000).toFixed(1)} kW @ {read.contract.overageMul}x</Chip>
+          )}
+        </div>
+        <p className="mt-1 text-[10px] text-muted-foreground">
+          Peak hours run 16:00–21:00. Draw above the ceiling is billed at the penalty rate and the breaker sags past 125%.
+        </p>
+        <div className="mt-3 space-y-2">
+          {CONTRACTS.map((c) => {
+            const m = c.mining!;
+            const owned = state.owned.includes(c.id);
+            const active = state.mining.contract === c.id;
+            return (
+              <div
+                key={c.id}
+                className={cn(
+                  "rounded-md border p-2",
+                  active ? "border-hud-green/50 bg-hud-green/5" : "border-border/60 bg-background/40",
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="truncate text-xs text-foreground">{c.name}</p>
+                  {active ? (
+                    <Chip tone="green">ACTIVE</Chip>
+                  ) : owned ? (
+                    <HudButton size="sm" tone="ghost" onClick={() => dispatch({ type: "mining-contract", id: c.id })}>
+                      Switch
+                    </HudButton>
+                  ) : (
+                    <Chip tone="dim">{c.price.toLocaleString()} cr · SHOP</Chip>
+                  )}
+                </div>
+                <p className="mt-0.5 text-[10px] text-muted-foreground">
+                  {m.capacityKw} kW · {m.pricePerKwh} base · peak {m.peakMul}x · off-peak {m.offPeakMul}x · overage{" "}
+                  {m.overageMul}x{m.switchFee ? ` · exit ${m.switchFee.toLocaleString()} cr` : " · no exit fee"}
+                </p>
+              </div>
+            );
+          })}
+        </div>
       </Panel>
 
       <Panel label="INSTALLED UNITS" className="p-3">

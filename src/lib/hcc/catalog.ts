@@ -72,10 +72,10 @@ export const CATALOG: readonly Item[] = [
   { id: "min-immersion", name: "Immersion Cooling Tank", category: "mining", tier: 4, price: 12800, blurb: "Dielectric fluid, silent, absurd.", stackable: true, mining: { kind: "cooler", hash: 0, watts: 300, heat: -140 }, rank: 3 },
 
   // ── power contracts ─────────────────────────────────────────────────────
-  { id: "pow-1", name: "Residential Meter", category: "mining", tier: 1, price: 0, blurb: "7 kW ceiling. Neighbours notice.", mining: { kind: "contract", hash: 0, watts: 0, heat: 0, capacityKw: 7, pricePerKwh: 0.34 } },
-  { id: "pow-2", name: "Small Business Line", category: "mining", tier: 2, price: 3200, blurb: "22 kW and a cheaper rate.", mining: { kind: "contract", hash: 0, watts: 0, heat: 0, capacityKw: 22, pricePerKwh: 0.21 } },
-  { id: "pow-3", name: "Industrial Feed", category: "mining", tier: 3, price: 11500, blurb: "80 kW. Your own transformer on the pad.", mining: { kind: "contract", hash: 0, watts: 0, heat: 0, capacityKw: 80, pricePerKwh: 0.12 }, rank: 3 },
-  { id: "pow-4", name: "Hydro Substation Lease", category: "mining", tier: 4, price: 34000, blurb: "250 kW of meltwater. Nearly free.", mining: { kind: "contract", hash: 0, watts: 0, heat: 0, capacityKw: 250, pricePerKwh: 0.05 }, rank: 4 },
+  { id: "pow-1", name: "Residential Meter", category: "mining", tier: 1, price: 0, blurb: "7 kW ceiling, brutal peak pricing, no exit fee.", mining: { kind: "contract", hash: 0, watts: 0, heat: 0, capacityKw: 7, pricePerKwh: 0.34, peakMul: 1.9, offPeakMul: 0.9, overageMul: 3.5, switchFee: 0, demandPerKw: 0 } },
+  { id: "pow-2", name: "Small Business Line", category: "mining", tier: 2, price: 3200, blurb: "22 kW, flatter peak curve, small exit fee.", mining: { kind: "contract", hash: 0, watts: 0, heat: 0, capacityKw: 22, pricePerKwh: 0.21, peakMul: 1.45, offPeakMul: 0.82, overageMul: 3, switchFee: 400, demandPerKw: 0.4 } },
+  { id: "pow-3", name: "Industrial Feed", category: "mining", tier: 3, price: 11500, blurb: "80 kW. Demand charges, gentle peaks.", mining: { kind: "contract", hash: 0, watts: 0, heat: 0, capacityKw: 80, pricePerKwh: 0.12, peakMul: 1.2, offPeakMul: 0.75, overageMul: 2.4, switchFee: 1800, demandPerKw: 1.2 }, rank: 3 },
+  { id: "pow-4", name: "Hydro Substation Lease", category: "mining", tier: 4, price: 34000, blurb: "250 kW of meltwater. Flat rate, heavy exit fee.", mining: { kind: "contract", hash: 0, watts: 0, heat: 0, capacityKw: 250, pricePerKwh: 0.05, peakMul: 1.05, offPeakMul: 0.95, overageMul: 2, switchFee: 6000, demandPerKw: 2.2 }, rank: 4 },
 
   // ── customization ───────────────────────────────────────────────────────
   { id: "light-cyan", name: "Lighting — Ice Cyan", category: "custom", slot: "lighting", tier: 1, price: 240, blurb: "Cold light on brushed aluminium." },
