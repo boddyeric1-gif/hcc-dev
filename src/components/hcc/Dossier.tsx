@@ -12,6 +12,7 @@ export function Dossier({
   onCommand: (cmd: string) => void;
 }) {
   const target = TARGETS.find((t) => t.id === state.selected) ?? TARGETS[0];
+  if (!target) return null;
   const p = progressOf(state, target.id);
 
   return (
