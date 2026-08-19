@@ -27,7 +27,7 @@ function Room({ accent }: { accent: string }) {
     <group>
       <mesh position={[0, 2.2, -2.1]} receiveShadow>
         <planeGeometry args={[12, 5]} />
-        <meshStandardMaterial color="#101722" roughness={0.88} metalness={0.08} />
+        <meshStandardMaterial color="#ff0000" roughness={0.88} metalness={0.08} />
       </mesh>
       <mesh position={[-3.4, 2.2, -2.08]}>
         <planeGeometry args={[0.04, 3.2]} />
