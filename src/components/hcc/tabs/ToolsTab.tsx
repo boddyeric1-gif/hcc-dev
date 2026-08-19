@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import Cipher from "../tools/Cipher";
 import LedgerTrace from "../tools/LedgerTrace";
@@ -6,7 +6,8 @@ import PortMapper from "../tools/PortMapper";
 import Pretext from "../tools/Pretext";
 import { Chip, HudButton, Panel } from "../ui";
 import { useGame, useStats } from "@/lib/hcc/store";
-import { findTarget } from "@/lib/hcc/state";
+import { findTarget, rankIndex } from "@/lib/hcc/state";
+import { opDifficulty, seedFor } from "@/lib/hcc/puzzles";
 import type { OpKind } from "@/lib/hcc/types";
 import { cn } from "@/lib/utils";
 
@@ -22,19 +23,31 @@ export default function ToolsTab() {
   const stats = useStats();
   const target = findTarget(state, state.selected);
   const [running, setRunning] = useState<OpKind | null>(null);
+  const [run, setRun] = useState(() => Math.floor(Math.random() * 1e6));
 
-  if (!target) return null;
+  const diff = useMemo(
+    () => (target ? opDifficulty(target, { crack: stats.crack, rank: rankIndex(state.intel) }) : null),
+    [target, stats.crack, state.intel],
+  );
+
+  if (!target || !diff) return null;
   const progress = state.progress[target.id];
   const seized = progress?.seized ?? false;
+  const engaged = state.active.includes(target.id);
+  const slots = Math.max(1, Math.round(stats.opSlots));
 
   const finish = (kind: OpKind) => (success: boolean) => {
     dispatch({ type: "op", targetId: target.id, kind, success });
     setRunning(null);
+    setRun((r) => r + 1);
   };
 
-  const probes = 5 + Math.round(stats.crack * 6) - (target.security > 90 ? 1 : 0);
-  const attempts = 2 + Math.round(stats.crack * 4);
-  const hops = target.security > 90 ? 5 : target.security > 80 ? 4 : 3;
+  const start = (kind: OpKind) => {
+    setRun((r) => r + 1);
+    setRunning(kind);
+  };
+
+  const seed = seedFor(target.id, running ?? "none", run);
 
   return (
     <div className="space-y-3">
@@ -44,8 +57,21 @@ export default function ToolsTab() {
             <p className="text-[10px] tracking-[0.2em] text-muted-foreground">ENGAGING</p>
             <h2 className="font-display text-lg tracking-widest text-hud-cyan">{target.codename}</h2>
           </div>
-          <Chip tone="cyan">SEC {target.security}</Chip>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Chip tone="cyan">SEC {target.security}</Chip>
+            <Chip
+              tone={diff.label === "BLACKSITE" ? "red" : diff.label === "HARDENED" ? "amber" : "green"}
+            >
+              {diff.label}
+            </Chip>
+            <Chip tone="dim">
+              CHANNELS {state.active.length}/{slots}
+            </Chip>
+          </div>
         </div>
+        <p className="mt-2 text-[10px] text-muted-foreground">
+          Difficulty adapts: harder targets shrink your budget, better rigs and higher rank widen it again.
+        </p>
       </Panel>
 
       {seized && (
@@ -54,7 +80,21 @@ export default function ToolsTab() {
         </Panel>
       )}
 
-      {!seized && running === null && (
+      {!seized && !engaged && (
+        <Panel className="p-3">
+          <p className="text-xs text-muted-foreground">
+            {target.codename} is not on an active channel.{" "}
+            {state.active.length >= slots
+              ? "All channels are in use — engaging will let the oldest case go cold."
+              : "Engage to open a channel and start collecting evidence."}
+          </p>
+          <HudButton className="mt-3" size="sm" onClick={() => dispatch({ type: "engage", id: target.id })}>
+            Engage case
+          </HudButton>
+        </Panel>
+      )}
+
+      {!seized && engaged && running === null && (
         <div className="grid gap-3 sm:grid-cols-2">
           {OPS.map((op) => {
             const done = progress?.evidence.includes(op.kind);
@@ -65,7 +105,7 @@ export default function ToolsTab() {
                   {done && <Chip tone="green">FILED</Chip>}
                 </div>
                 <p className="mt-1 mb-3 text-[11px] text-muted-foreground">{op.desc}</p>
-                <HudButton size="sm" disabled={done ?? false} onClick={() => setRunning(op.kind)}>
+                <HudButton size="sm" disabled={done ?? false} onClick={() => start(op.kind)}>
                   {done ? "Complete" : "Execute"}
                 </HudButton>
               </Panel>
@@ -74,13 +114,26 @@ export default function ToolsTab() {
         </div>
       )}
 
-      {running === "ports" && <PortMapper target={target} probes={probes} onDone={finish("ports")} />}
-      {running === "pretext" && <Pretext target={target} onDone={finish("pretext")} />}
-      {running === "cipher" && <Cipher target={target} attempts={attempts} onDone={finish("cipher")} />}
-      {running === "ledger" && <LedgerTrace target={target} length={hops} onDone={finish("ledger")} />}
+      {engaged && running === "ports" && (
+        <PortMapper target={target} diff={diff} seed={seed} onDone={finish("ports")} />
+      )}
+      {engaged && running === "pretext" && (
+        <Pretext target={target} diff={diff} seed={seed} onDone={finish("pretext")} />
+      )}
+      {engaged && running === "cipher" && (
+        <Cipher target={target} diff={diff} seed={seed} onDone={finish("cipher")} />
+      )}
+      {engaged && running === "ledger" && <LedgerTrace diff={diff} seed={seed} onDone={finish("ledger")} />}
 
       {running !== null && (
-        <HudButton tone="ghost" size="sm" onClick={() => setRunning(null)}>
+        <HudButton
+          tone="ghost"
+          size="sm"
+          onClick={() => {
+            setRunning(null);
+            setRun((r) => r + 1);
+          }}
+        >
           Abort operation
         </HudButton>
       )}

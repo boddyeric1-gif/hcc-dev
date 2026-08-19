@@ -68,8 +68,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
       if (read.effectiveHash <= 0 && read.costPerSec <= 0) return;
       dispatch({
         type: "mining-accrue",
-        coin: state.mining.coin,
-        amount: read.coinPerSec * 2,
+        amounts: {
+          BTC: read.coins.BTC.coinPerSec * 2,
+          ETH: read.coins.ETH.coinPerSec * 2,
+          GHST: read.coins.GHST.coinPerSec * 2,
+        },
         cost: read.costPerSec * 2,
         at: now,
       });

@@ -51,6 +51,7 @@ export const initialState = (): GameState => ({
   heat: 0,
   takedowns: 0,
   selected: TARGETS[0]!.id,
+  active: [TARGETS[0]!.id],
   generated: [],
   progress: Object.fromEntries(
     TARGETS.map((t) => [t.id, { evidence: [], seized: false }]),
@@ -61,6 +62,7 @@ export const initialState = (): GameState => ({
   mining: {
     coin: "GHST",
     units: {},
+    alloc: {},
     contract: "pow-1",
     balances: { BTC: 0, ETH: 0, GHST: 0 },
     lastTick: 0,
@@ -79,6 +81,7 @@ const BASE_STATS: RigStats = {
   bounty: 0,
   miningMul: 1,
   coolingWatts: 0,
+  opSlots: 1,
 };
 
 export const deriveStats = (s: GameState): RigStats => {
@@ -100,10 +103,21 @@ export const deriveStats = (s: GameState): RigStats => {
     out.scan += st.scan ?? 0;
     out.bounty += st.bounty ?? 0;
     out.coolingWatts += st.coolingWatts ?? 0;
+    out.opSlots += st.opSlots ?? 0;
     if (st.miningMul) out.miningMul *= st.miningMul;
   });
   out.crack = Math.min(0.92, out.crack);
   return out;
+};
+
+export type CoinReadout = {
+  hash: number;
+  effectiveHash: number;
+  coinPerSec: number;
+  difficulty: number;
+  bid: number;
+  revenuePerSec: number;
+  units: number;
 };
 
 export type MiningReadout = {
@@ -131,6 +145,28 @@ export type MiningReadout = {
   breakEven: number;
   dailyNet: number;
   limiter: string;
+  coins: Record<Coin, CoinReadout>;
+  totalNetPerSec: number;
+};
+
+const COIN_LIST: readonly Coin[] = ["BTC", "ETH", "GHST"];
+
+/** How many units of a hardware type are pointed at each coin. */
+export const unitAllocation = (
+  s: GameState,
+  id: string,
+): Record<Coin, number> => {
+  const total = s.mining.units[id] ?? 0;
+  const saved = s.mining.alloc[id] ?? {};
+  const out = { BTC: 0, ETH: 0, GHST: 0 } as Record<Coin, number>;
+  let used = 0;
+  COIN_LIST.forEach((c) => {
+    const n = Math.max(0, Math.min(total - used, saved[c] ?? 0));
+    out[c] = n;
+    used += n;
+  });
+  out[s.mining.coin] += Math.max(0, total - used);
+  return out;
 };
 
 export const coinPrice = (coin: Coin, at: number): number => {
@@ -145,6 +181,8 @@ export const deriveMining = (s: GameState, at: number): MiningReadout => {
   let cooling = 0;
   let slots = 0;
   let slotsUsed = 0;
+  const coinHash = { BTC: 0, ETH: 0, GHST: 0 } as Record<Coin, number>;
+  const coinUnits = { BTC: 0, ETH: 0, GHST: 0 } as Record<Coin, number>;
   Object.entries(s.mining.units).forEach(([id, count]) => {
     const it = itemById(id);
     const m = it?.mining;
@@ -162,6 +200,11 @@ export const deriveMining = (s: GameState, at: number): MiningReadout => {
     hash += m.hash * count;
     watts += m.watts * count;
     heat += m.heat * count;
+    const alloc = unitAllocation(s, id);
+    COIN_LIST.forEach((c) => {
+      coinHash[c] += m.hash * alloc[c];
+      coinUnits[c] += alloc[c];
+    });
   });
   cooling += stats.coolingWatts / 100;
   const contract = contractRead(s.mining.contract, at);
@@ -177,8 +220,28 @@ export const deriveMining = (s: GameState, at: number): MiningReadout => {
   const throttle = powerThrottle * heatThrottle * slotThrottle;
 
   const effectiveHash = hash * throttle * stats.miningMul;
-  const diff = difficulty(s.mining.coin, at, effectiveHash);
-  const coinPerSec = (effectiveHash * COINS[s.mining.coin].perHash) / diff;
+  const coins = {} as Record<Coin, CoinReadout>;
+  let revenuePerSec = 0;
+  COIN_LIST.forEach((c) => {
+    const eff = coinHash[c] * throttle * stats.miningMul;
+    const d = difficulty(c, at, eff);
+    const cps = (eff * COINS[c].perHash) / d;
+    const cq = quote(c, at);
+    const rev = cps * cq.bid;
+    revenuePerSec += rev;
+    coins[c] = {
+      hash: coinHash[c],
+      effectiveHash: eff,
+      coinPerSec: cps,
+      difficulty: d,
+      bid: cq.bid,
+      revenuePerSec: rev,
+      units: coinUnits[c],
+    };
+  });
+  const sel = coins[s.mining.coin]!;
+  const diff = sel.difficulty;
+  const coinPerSec = sel.coinPerSec;
   const q = quote(s.mining.coin, at);
   const drawnW = watts * throttle;
   const billedOverW = Math.max(0, drawnW - capacityW);
@@ -190,7 +253,7 @@ export const deriveMining = (s: GameState, at: number): MiningReadout => {
   const costPerSec = energyCost + demandCost;
 
   const breakEven = coinPerSec > 0 ? costPerSec / coinPerSec : 0;
-  const netPerSec = coinPerSec * q.bid - costPerSec;
+  const netPerSec = revenuePerSec - costPerSec;
 
   const limiter =
     slotsUsed > slots
@@ -230,6 +293,8 @@ export const deriveMining = (s: GameState, at: number): MiningReadout => {
     breakEven,
     dailyNet: netPerSec * 86400,
     limiter,
+    coins,
+    totalNetPerSec: netPerSec,
   };
 };
 
@@ -254,6 +319,8 @@ export type Action =
   | { type: "audio"; patch: Partial<AudioSettings> }
   | { type: "tab"; tab: TabId }
   | { type: "select"; id: string }
+  | { type: "engage"; id: string }
+  | { type: "drop"; id: string }
   | { type: "spawn"; target: Target }
   | { type: "log"; text: string; tone?: Tone }
   | { type: "op"; targetId: string; kind: OpKind; success: boolean }
@@ -263,8 +330,9 @@ export type Action =
   | { type: "scrub" }
   | { type: "mining-coin"; coin: Coin }
   | { type: "mining-unit"; id: string; delta: number }
+  | { type: "mining-assign"; id: string; coin: Coin; delta: number }
   | { type: "mining-contract"; id: string }
-  | { type: "mining-accrue"; coin: Coin; amount: number; cost: number; at: number }
+  | { type: "mining-accrue"; amounts: Partial<Record<Coin, number>>; cost: number; at: number }
   | { type: "sell"; coin: Coin; at: number }
   | { type: "quality"; quality: Quality }
   | { type: "restore"; saved: Partial<GameState> }
@@ -316,6 +384,41 @@ export const reducer = (s: GameState, a: Action): GameState => {
       return { ...s, tab: a.tab };
     case "select":
       return { ...s, selected: a.id };
+    case "engage": {
+      const t = findTarget(s, a.id);
+      if (!t) return s;
+      if (s.progress[a.id]?.seized) return { ...s, selected: a.id };
+      if (s.active.includes(a.id)) return { ...s, selected: a.id };
+      const slots = Math.max(1, Math.round(deriveStats(s).opSlots));
+      let next: GameState = { ...s, selected: a.id, active: [...s.active, a.id] };
+      let progress = next.progress;
+      while (next.active.length > slots) {
+        const [oldest, ...rest] = next.active;
+        if (!oldest) break;
+        const cold = findTarget(s, oldest);
+        progress = { ...progress, [oldest]: { evidence: [], seized: progress[oldest]?.seized ?? false } };
+        next = { ...next, active: rest, progress };
+        next = pushLog(
+          next,
+          `${cold?.codename ?? oldest} went cold — evidence lost. Buy parallel-op capacity to keep cases warm.`,
+          "warn",
+        );
+      }
+      return pushLog(next, `Case engaged — ${t.codename}. ${next.active.length}/${slots} channels in use.`, "sys");
+    }
+    case "drop": {
+      if (!s.active.includes(a.id)) return s;
+      const t = findTarget(s, a.id);
+      return pushLog(
+        {
+          ...s,
+          active: s.active.filter((id) => id !== a.id),
+          progress: { ...s.progress, [a.id]: { evidence: [], seized: s.progress[a.id]?.seized ?? false } },
+        },
+        `Released ${t?.codename ?? a.id}. Channel free.`,
+        "dim",
+      );
+    }
     case "spawn": {
       if (s.generated.some((t) => t.id === a.target.id)) return s;
       let next: GameState = {
@@ -332,6 +435,9 @@ export const reducer = (s: GameState, a: Action): GameState => {
     case "op": {
       const t = findTarget(s, a.targetId);
       if (!t) return s;
+      if (!s.active.includes(a.targetId)) {
+        return pushLog(s, `${t.codename} is not an engaged case.`, "warn");
+      }
       const op = t.ops.find((o) => o.kind === a.kind);
       if (!op) return s;
       if (!a.success) {
@@ -373,6 +479,7 @@ export const reducer = (s: GameState, a: Action): GameState => {
         progress: { ...s.progress, [a.targetId]: { ...p, seized: true } },
       };
       next = pushLog(next, `SERVER SEIZED — ${t.host} (${t.codename}) is offline.`, "ok");
+      next = { ...next, active: next.active.filter((id) => id !== a.targetId) };
       next = pushLog(
         next,
         `${t.operator.realName} ("${t.operator.alias}") detained in ${t.operator.location}.`,
@@ -449,6 +556,16 @@ export const reducer = (s: GameState, a: Action): GameState => {
       const nextCount = Math.max(0, cur + a.delta);
       return { ...s, mining: { ...s.mining, units: { ...s.mining.units, [a.id]: nextCount } } };
     }
+    case "mining-assign": {
+      const total = s.mining.units[a.id] ?? 0;
+      const cur = unitAllocation(s, a.id);
+      const next = Math.max(0, Math.min(total, (s.mining.alloc[a.id]?.[a.coin] ?? cur[a.coin]) + a.delta));
+      const others = { ...(s.mining.alloc[a.id] ?? {}) };
+      const explicit: Partial<Record<Coin, number>> = { ...others, [a.coin]: next };
+      const sum = COIN_LIST.reduce((acc, c) => acc + (explicit[c] ?? 0), 0);
+      if (sum > total) return s;
+      return { ...s, mining: { ...s.mining, alloc: { ...s.mining.alloc, [a.id]: explicit } } };
+    }
     case "mining-accrue":
       return {
         ...s,
@@ -456,7 +573,10 @@ export const reducer = (s: GameState, a: Action): GameState => {
         mining: {
           ...s.mining,
           lastTick: a.at,
-          balances: { ...s.mining.balances, [a.coin]: s.mining.balances[a.coin] + a.amount },
+          balances: COIN_LIST.reduce(
+            (acc, c) => ({ ...acc, [c]: s.mining.balances[c] + (a.amounts[c] ?? 0) }),
+            {} as Record<Coin, number>,
+          ),
         },
       };
     case "sell": {
@@ -490,6 +610,7 @@ export const reducer = (s: GameState, a: Action): GameState => {
         log: s.log,
         nextLineId: s.nextLineId,
         generated: sv.generated ?? [],
+        active: sv.active ?? base.active,
         progress: { ...base.progress, ...(sv.progress ?? {}) },
         installed: { ...base.installed, ...(sv.installed ?? {}) },
         owned: Array.from(new Set([...base.owned, ...(sv.owned ?? [])])),

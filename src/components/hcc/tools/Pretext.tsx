@@ -1,45 +1,32 @@
 import { useMemo, useState } from "react";
 
 import { HudButton, Panel } from "../ui";
+import { buildPretext, mulberry } from "@/lib/hcc/puzzles";
+import type { OpDifficulty } from "@/lib/hcc/puzzles";
 import { cn } from "@/lib/utils";
 import type { Target } from "@/lib/hcc/types";
 
-type Round = { signal: string; options: { text: string; ok: boolean }[] };
-
-const ROUNDS: Round[] = [
-  {
-    signal: "Operator responds to authority and deadlines.",
-    options: [
-      { text: "Hey! Big fan of the site, can we chat?", ok: false },
-      { text: "Compliance review closes in 40 minutes. Confirm your escrow reference.", ok: true },
-      { text: "I think your server has a bug, want me to look?", ok: false },
-    ],
-  },
-  {
-    signal: "Their support staff are overworked and unsupervised.",
-    options: [
-      { text: "Escalate to your supervisor immediately.", ok: false },
-      { text: "I won't file a complaint — just resend the case number and we're done.", ok: true },
-      { text: "I demand the owner's full legal name.", ok: false },
-    ],
-  },
-  {
-    signal: "They verify by asking for something only a member would know.",
-    options: [
-      { text: "Quote the vetting fee back at them, exactly.", ok: true },
-      { text: "Claim the verification system is broken.", ok: false },
-      { text: "Send a screenshot of an unrelated invoice.", ok: false },
-    ],
-  },
-];
-
-export default function Pretext({ target, onDone }: { target: Target; onDone: (s: boolean) => void }) {
-  const rounds = useMemo(() => ROUNDS, []);
+export default function Pretext({
+  target,
+  diff,
+  seed,
+  onDone,
+}: {
+  target: Target;
+  diff: OpDifficulty;
+  seed: number;
+  onDone: (s: boolean) => void;
+}) {
+  const rounds = useMemo(
+    () => buildPretext(mulberry(seed), diff.pretextRounds),
+    [seed, diff.pretextRounds],
+  );
   const [step, setStep] = useState(0);
   const [wrong, setWrong] = useState(0);
   const [picked, setPicked] = useState<number | null>(null);
-  const done = step >= rounds.length;
-  const win = done && wrong === 0;
+  const blown = wrong > diff.pretextAllowed;
+  const done = blown || step >= rounds.length;
+  const win = !blown && step >= rounds.length;
   const round = rounds[step];
 
   return (
@@ -55,7 +42,7 @@ export default function Pretext({ target, onDone }: { target: Target; onDone: (s
           <div className="space-y-2">
             {round.options.map((o, i) => (
               <button
-                key={i}
+                key={o.text}
                 type="button"
                 disabled={picked !== null}
                 onClick={() => {
@@ -79,7 +66,7 @@ export default function Pretext({ target, onDone }: { target: Target; onDone: (s
             ))}
           </div>
           <div className="mt-3 text-[10px] tracking-[0.18em] text-muted-foreground">
-            EXCHANGE {step + 1}/{rounds.length} · SUSPICION {wrong}
+            EXCHANGE {step + 1}/{rounds.length} · SUSPICION {wrong}/{diff.pretextAllowed + 1}
           </div>
         </>
       )}

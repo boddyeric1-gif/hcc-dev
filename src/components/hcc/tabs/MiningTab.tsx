@@ -6,7 +6,7 @@ import SceneBrightness from "../SceneBrightness";
 import type { MiningVisual } from "../three/MiningScene";
 import { useGame } from "@/lib/hcc/store";
 import { COINS, CATALOG, LIGHT_HEX, itemById } from "@/lib/hcc/catalog";
-import { deriveMining } from "@/lib/hcc/state";
+import { deriveMining, unitAllocation } from "@/lib/hcc/state";
 import { priceHistory, sellQuote } from "@/lib/hcc/market";
 import { activeNews, recentNews } from "@/lib/hcc/news";
 import type { Coin } from "@/lib/hcc/types";
@@ -130,6 +130,7 @@ export default function MiningTab() {
           <Stat
             label="PROJECTED / DAY"
             value={`${Math.round(read.dailyNet).toLocaleString()} cr`}
+            hint="all coins, net of power"
             tone={read.dailyNet >= 0 ? "green" : "red"}
           />
         </div>
@@ -193,6 +194,25 @@ export default function MiningTab() {
           <span className={read.limiter === "NONE" ? "text-hud-green" : "text-hud-amber"}>{read.limiter}</span>
           {read.hash > 0 && ` · ${(read.watts / Math.max(1, read.effectiveHash)).toFixed(1)} W per MH/s`}
         </p>
+        <div className="mt-3 space-y-1">
+          {COIN_LIST.map((c) => {
+            const cr = read.coins[c];
+            return (
+              <div
+                key={c}
+                className="flex items-center justify-between gap-2 rounded-md border border-border/50 bg-background/40 px-2 py-1 text-[10px]"
+              >
+                <span className="tracking-[0.18em] text-muted-foreground">{c}</span>
+                <span className="text-muted-foreground">
+                  {cr.units} unit{cr.units === 1 ? "" : "s"} · {cr.effectiveHash.toFixed(0)} MH/s
+                </span>
+                <span className={cr.revenuePerSec > 0 ? "text-hud-green tabular-nums" : "text-muted-foreground"}>
+                  {Math.round(cr.revenuePerSec * 3600).toLocaleString()} cr/h
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </Panel>
 
       <Panel label="POWER CONTRACT" className="p-3">
@@ -254,12 +274,20 @@ export default function MiningTab() {
             No mining hardware. Buy shelves, rigs and cooling from the SHOP.
           </p>
         )}
+        {units.length > 0 && (
+          <p className="mb-2 text-[10px] text-muted-foreground">
+            Assign individual miners to coins. Anything left unassigned mines {state.mining.coin}.
+          </p>
+        )}
         <div className="space-y-2">
           {units.map(([id, n]) => {
             const it = itemById(id);
             if (!it) return null;
+            const alloc = unitAllocation(state, id);
+            const assignable = (it.mining?.kind === "gpu" || it.mining?.kind === "asic") ?? false;
             return (
-              <div key={id} className="flex items-center justify-between gap-2 rounded-md border border-border/60 bg-background/40 p-2">
+              <div key={id} className="rounded-md border border-border/60 bg-background/40 p-2">
+                <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate text-xs text-foreground">{it.name}</p>
                   <p className="text-[10px] text-muted-foreground">
@@ -273,6 +301,35 @@ export default function MiningTab() {
                   </HudButton>
                   <Chip tone="cyan">{n}</Chip>
                 </div>
+                </div>
+                {assignable && (
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {COIN_LIST.map((c) => (
+                      <div
+                        key={c}
+                        className="flex items-center justify-between gap-1 rounded-md border border-border/50 px-1.5 py-1"
+                      >
+                        <button
+                          type="button"
+                          className="px-1 text-[11px] text-muted-foreground hover:text-hud-red"
+                          onClick={() => dispatch({ type: "mining-assign", id, coin: c, delta: -1 })}
+                        >
+                          −
+                        </button>
+                        <span className="text-[10px] tabular-nums text-foreground">
+                          {c} {alloc[c]}
+                        </span>
+                        <button
+                          type="button"
+                          className="px-1 text-[11px] text-muted-foreground hover:text-hud-green"
+                          onClick={() => dispatch({ type: "mining-assign", id, coin: c, delta: 1 })}
+                        >
+                          +
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
