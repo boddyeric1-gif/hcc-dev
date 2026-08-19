@@ -52,6 +52,9 @@ export const CATALOG: readonly Item[] = [
   { id: "tool-proxy", name: "Proxy Layer Pack", category: "tools", tier: 2, price: 1300, blurb: "Three more hops between you and them.", stats: { dissipation: 8 } },
   { id: "tool-scrub", name: "Log Scrubber Daemon", category: "tools", tier: 3, price: 3400, blurb: "Rewrites your traces continuously.", stats: { dissipation: 14 }, rank: 2 },
   { id: "tool-sock", name: "Social Dossier Engine", category: "tools", tier: 2, price: 2100, blurb: "Pretexts written from real behavioural data.", stats: { crack: 0.05, scan: 0.6 } },
+  { id: "tool-split", name: "Split-Session Daemon", category: "tools", tier: 2, price: 4200, blurb: "Hold a second case warm on its own channel.", stats: { opSlots: 1 } },
+  { id: "tool-orches", name: "Op Orchestrator", category: "tools", tier: 3, price: 9800, blurb: "A third parallel channel, scheduled and logged.", stats: { opSlots: 1, scan: 0.8 }, rank: 2 },
+  { id: "tool-swarm", name: "Swarm Controller", category: "tools", tier: 4, price: 21000, blurb: "Two more channels. Four cases, one operator.", stats: { opSlots: 2, crack: 0.04 }, rank: 3 },
 
   // ── perks ───────────────────────────────────────────────────────────────
   { id: "perk-cold", name: "Cold Hands", category: "perks", tier: 2, price: 2400, blurb: "Failed operations cost half the usual heat.", stats: { dissipation: 10 } },
@@ -59,6 +62,7 @@ export const CATALOG: readonly Item[] = [
   { id: "perk-insider", name: "Agency Insider", category: "perks", tier: 3, price: 6500, blurb: "Bounties pay 45% more. Do not ask her name.", stats: { bounty: 0.45 }, rank: 3 },
   { id: "perk-thermal", name: "Thermal Discipline", category: "perks", tier: 3, price: 5800, blurb: "Mining hardware runs 25% cooler.", stats: { coolingWatts: 800 }, rank: 2 },
   { id: "perk-quant", name: "Quant Instinct", category: "perks", tier: 4, price: 11000, blurb: "Mining yield up 30%. You feel the market.", stats: { miningMul: 1.3 }, rank: 4 },
+  { id: "perk-taskforce", name: "Task Force Liaison", category: "perks", tier: 4, price: 16500, blurb: "One more parallel case and warmer bounties.", stats: { opSlots: 1, bounty: 0.15 }, rank: 4 },
 
   // ── mining hardware ─────────────────────────────────────────────────────
   { id: "min-shelf", name: "Steel Mining Shelf", category: "mining", tier: 1, price: 450, blurb: "Holds six units off the floor.", stackable: true, mining: { kind: "shelf", hash: 0, watts: 0, heat: 0, slots: 6 } },
