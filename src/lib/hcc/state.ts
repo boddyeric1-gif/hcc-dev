@@ -51,6 +51,7 @@ export const initialState = (): GameState => ({
   heat: 0,
   takedowns: 0,
   selected: TARGETS[0]!.id,
+  active: [TARGETS[0]!.id],
   generated: [],
   progress: Object.fromEntries(
     TARGETS.map((t) => [t.id, { evidence: [], seized: false }]),
@@ -61,6 +62,7 @@ export const initialState = (): GameState => ({
   mining: {
     coin: "GHST",
     units: {},
+    alloc: {},
     contract: "pow-1",
     balances: { BTC: 0, ETH: 0, GHST: 0 },
     lastTick: 0,
@@ -79,6 +81,7 @@ const BASE_STATS: RigStats = {
   bounty: 0,
   miningMul: 1,
   coolingWatts: 0,
+  opSlots: 1,
 };
 
 export const deriveStats = (s: GameState): RigStats => {
@@ -100,10 +103,21 @@ export const deriveStats = (s: GameState): RigStats => {
     out.scan += st.scan ?? 0;
     out.bounty += st.bounty ?? 0;
     out.coolingWatts += st.coolingWatts ?? 0;
+    out.opSlots += st.opSlots ?? 0;
     if (st.miningMul) out.miningMul *= st.miningMul;
   });
   out.crack = Math.min(0.92, out.crack);
   return out;
+};
+
+export type CoinReadout = {
+  hash: number;
+  effectiveHash: number;
+  coinPerSec: number;
+  difficulty: number;
+  bid: number;
+  revenuePerSec: number;
+  units: number;
 };
 
 export type MiningReadout = {
@@ -131,6 +145,28 @@ export type MiningReadout = {
   breakEven: number;
   dailyNet: number;
   limiter: string;
+  coins: Record<Coin, CoinReadout>;
+  totalNetPerSec: number;
+};
+
+const COIN_LIST: readonly Coin[] = ["BTC", "ETH", "GHST"];
+
+/** How many units of a hardware type are pointed at each coin. */
+export const unitAllocation = (
+  s: GameState,
+  id: string,
+): Record<Coin, number> => {
+  const total = s.mining.units[id] ?? 0;
+  const saved = s.mining.alloc[id] ?? {};
+  const out = { BTC: 0, ETH: 0, GHST: 0 } as Record<Coin, number>;
+  let used = 0;
+  COIN_LIST.forEach((c) => {
+    const n = Math.max(0, Math.min(total - used, saved[c] ?? 0));
+    out[c] = n;
+    used += n;
+  });
+  out[s.mining.coin] += Math.max(0, total - used);
+  return out;
 };
 
 export const coinPrice = (coin: Coin, at: number): number => {
@@ -145,6 +181,8 @@ export const deriveMining = (s: GameState, at: number): MiningReadout => {
   let cooling = 0;
   let slots = 0;
   let slotsUsed = 0;
+  const coinHash = { BTC: 0, ETH: 0, GHST: 0 } as Record<Coin, number>;
+  const coinUnits = { BTC: 0, ETH: 0, GHST: 0 } as Record<Coin, number>;
   Object.entries(s.mining.units).forEach(([id, count]) => {
     const it = itemById(id);
     const m = it?.mining;
@@ -162,6 +200,11 @@ export const deriveMining = (s: GameState, at: number): MiningReadout => {
     hash += m.hash * count;
     watts += m.watts * count;
     heat += m.heat * count;
+    const alloc = unitAllocation(s, id);
+    COIN_LIST.forEach((c) => {
+      coinHash[c] += m.hash * alloc[c];
+      coinUnits[c] += alloc[c];
+    });
   });
   cooling += stats.coolingWatts / 100;
   const contract = contractRead(s.mining.contract, at);
@@ -177,8 +220,28 @@ export const deriveMining = (s: GameState, at: number): MiningReadout => {
   const throttle = powerThrottle * heatThrottle * slotThrottle;
 
   const effectiveHash = hash * throttle * stats.miningMul;
-  const diff = difficulty(s.mining.coin, at, effectiveHash);
-  const coinPerSec = (effectiveHash * COINS[s.mining.coin].perHash) / diff;
+  const coins = {} as Record<Coin, CoinReadout>;
+  let revenuePerSec = 0;
+  COIN_LIST.forEach((c) => {
+    const eff = coinHash[c] * throttle * stats.miningMul;
+    const d = difficulty(c, at, eff);
+    const cps = (eff * COINS[c].perHash) / d;
+    const cq = quote(c, at);
+    const rev = cps * cq.bid;
+    revenuePerSec += rev;
+    coins[c] = {
+      hash: coinHash[c],
+      effectiveHash: eff,
+      coinPerSec: cps,
+      difficulty: d,
+      bid: cq.bid,
+      revenuePerSec: rev,
+      units: coinUnits[c],
+    };
+  });
+  const sel = coins[s.mining.coin]!;
+  const diff = sel.difficulty;
+  const coinPerSec = sel.coinPerSec;
   const q = quote(s.mining.coin, at);
   const drawnW = watts * throttle;
   const billedOverW = Math.max(0, drawnW - capacityW);
@@ -190,7 +253,7 @@ export const deriveMining = (s: GameState, at: number): MiningReadout => {
   const costPerSec = energyCost + demandCost;
 
   const breakEven = coinPerSec > 0 ? costPerSec / coinPerSec : 0;
-  const netPerSec = coinPerSec * q.bid - costPerSec;
+  const netPerSec = revenuePerSec - costPerSec;
 
   const limiter =
     slotsUsed > slots
@@ -230,6 +293,8 @@ export const deriveMining = (s: GameState, at: number): MiningReadout => {
     breakEven,
     dailyNet: netPerSec * 86400,
     limiter,
+    coins,
+    totalNetPerSec: netPerSec,
   };
 };
 
