@@ -1,11 +1,10 @@
 import { Bar, Chip, HudButton, Panel } from "../ui";
 import { useGame } from "@/lib/hcc/store";
-import { evidencePct } from "@/lib/hcc/state";
-import { targetById } from "@/lib/hcc/targets";
+import { evidencePct, findTarget } from "@/lib/hcc/state";
 
 export default function CaseTab() {
   const { state, dispatch } = useGame();
-  const t = targetById(state.selected);
+  const t = findTarget(state, state.selected);
   if (!t) return null;
   const p = state.progress[t.id];
   const pct = evidencePct(state, t.id);

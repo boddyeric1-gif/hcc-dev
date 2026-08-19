@@ -6,7 +6,7 @@ import PortMapper from "../tools/PortMapper";
 import Pretext from "../tools/Pretext";
 import { Chip, HudButton, Panel } from "../ui";
 import { useGame, useStats } from "@/lib/hcc/store";
-import { targetById } from "@/lib/hcc/targets";
+import { findTarget } from "@/lib/hcc/state";
 import type { OpKind } from "@/lib/hcc/types";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +20,7 @@ const OPS: { kind: OpKind; name: string; desc: string }[] = [
 export default function ToolsTab() {
   const { state, dispatch } = useGame();
   const stats = useStats();
-  const target = targetById(state.selected);
+  const target = findTarget(state, state.selected);
   const [running, setRunning] = useState<OpKind | null>(null);
 
   if (!target) return null;
