@@ -4,6 +4,7 @@ import { RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
 
 import SceneFrame from "./SceneFrame";
+import LightShafts from "./Volumetrics";
 import { makeScreenTexture } from "./screenTexture";
 import type { Quality } from "@/lib/hcc/types";
 
@@ -24,13 +25,9 @@ export type RigVisual = {
 function Room({ accent }: { accent: string }) {
   return (
     <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[24, 24]} />
-        <meshStandardMaterial color="#0a0e14" roughness={0.55} metalness={0.35} />
-      </mesh>
       <mesh position={[0, 2.2, -2.1]} receiveShadow>
         <planeGeometry args={[12, 5]} />
-        <meshStandardMaterial color="#0d1219" roughness={0.9} metalness={0.05} />
+        <meshStandardMaterial color="#161e29" roughness={0.88} metalness={0.08} />
       </mesh>
       <mesh position={[-3.4, 2.2, -2.08]}>
         <planeGeometry args={[0.04, 3.2]} />
@@ -40,8 +37,9 @@ function Room({ accent }: { accent: string }) {
         <planeGeometry args={[0.04, 3.2]} />
         <meshStandardMaterial color="#000" emissive={accent} emissiveIntensity={3} toneMapped={false} />
       </mesh>
-      <pointLight position={[-2.6, 2.4, -1.4]} intensity={9} distance={8} color={accent} />
-      <pointLight position={[2.6, 2.4, -1.4]} intensity={6} distance={8} color="#3b6bff" />
+      <pointLight position={[-2.6, 2.4, -1.4]} intensity={13} distance={9} color={accent} />
+      <pointLight position={[2.6, 2.4, -1.4]} intensity={9} distance={9} color="#4f86ff" />
+      <pointLight position={[0, 1.7, 1.4]} intensity={7} distance={7} color="#cfe6ff" />
     </group>
   );
 }
@@ -237,7 +235,15 @@ function Poster({ tier, accent }: { tier: number; accent: string }) {
   );
 }
 
-export default function RigScene({ v, quality }: { v: RigVisual; quality: Quality }) {
+export default function RigScene({
+  v,
+  quality,
+  brightness = 1.25,
+}: {
+  v: RigVisual;
+  quality: Quality;
+  brightness?: number;
+}) {
   const texA = useMemo(() => makeScreenTexture("terminal", v.accent), [v.accent]);
   const texB = useMemo(() => makeScreenTexture("graph", v.accent), [v.accent]);
   const texC = useMemo(() => makeScreenTexture("map", v.accent), [v.accent]);
@@ -264,8 +270,24 @@ export default function RigScene({ v, quality }: { v: RigVisual; quality: Qualit
   }, [v.monitors, texA, texB, texC]);
 
   return (
-    <SceneFrame quality={quality} camera={[0.25, 1.95, 3.5]} target={[0, 1.0, -0.35]}>
+    <SceneFrame
+      quality={quality}
+      brightness={brightness}
+      camera={[0.25, 1.95, 3.5]}
+      target={[0, 1.0, -0.35]}
+      floor={24}
+    >
       <Room accent={v.accent} />
+      <LightShafts
+        positions={[
+          [-1.1, 2.9, -0.9],
+          [1.1, 2.9, -0.9],
+        ]}
+        color="#bcd9ff"
+        height={2.9}
+        radius={0.75}
+        opacity={quality === "performance" ? 0.028 : 0.055}
+      />
       <Desk tier={v.desk} accent={v.accent} mat={v.deskmat} />
       {monitors.map((m, i) => (
         <Monitor key={i} position={m.p} rotation={m.r} size={m.s} tex={m.t} accent={v.accent} />
@@ -279,9 +301,9 @@ export default function RigScene({ v, quality }: { v: RigVisual; quality: Qualit
         position={[0, 3.2, 1.4]}
         angle={0.7}
         penumbra={0.9}
-        intensity={22}
+        intensity={40}
         color="#9fd8ff"
-        castShadow
+        castShadow={quality !== "performance"}
         shadow-mapSize={[1024, 1024]}
       />
     </SceneFrame>

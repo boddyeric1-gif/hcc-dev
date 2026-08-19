@@ -2,6 +2,7 @@ import { Suspense, lazy, useMemo } from "react";
 import { ClientOnly } from "@tanstack/react-router";
 
 import { Bar, Chip, HudButton, Panel, Stat } from "../ui";
+import SceneBrightness from "../SceneBrightness";
 import type { RigVisual } from "../three/RigScene";
 import { useGame, useStats } from "@/lib/hcc/store";
 import { LIGHT_HEX, SLOT_LABEL, itemById } from "@/lib/hcc/catalog";
@@ -63,7 +64,9 @@ export default function RigTab() {
       <Panel
         label="WORKSPACE — LIVE RENDER"
         right={
-          <div className="flex gap-1">
+          <div className="flex items-center gap-3">
+            <SceneBrightness />
+            <div className="flex gap-1">
             {QUALITIES.map((q) => (
               <button
                 key={q}
@@ -79,13 +82,14 @@ export default function RigTab() {
                 {q.slice(0, 4)}
               </button>
             ))}
+            </div>
           </div>
         }
       >
         <div className="h-[46vh] min-h-[280px] w-full">
           <ClientOnly fallback={<SceneFallback />}>
             <Suspense fallback={<SceneFallback />}>
-              <RigScene v={visual} quality={state.quality} />
+              <RigScene v={visual} quality={state.quality} brightness={state.brightness} />
             </Suspense>
           </ClientOnly>
         </div>

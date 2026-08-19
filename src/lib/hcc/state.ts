@@ -1,6 +1,8 @@
 import { CATALOG, COINS, DEFAULT_INSTALLED, STARTER_OWNED, itemById } from "./catalog";
+import { contractRead, difficulty, quote, sellQuote, type ContractRead, type Regime } from "./market";
 import { TARGETS, targetById } from "./targets";
 import type {
+  AudioSettings,
   Coin,
   GameState,
   Item,
@@ -41,6 +43,7 @@ export const stamp = (): string =>
 
 export const initialState = (): GameState => ({
   phase: "offline",
+  operator: null,
   tab: "command",
   credits: 2500,
   intel: 0,
@@ -61,6 +64,8 @@ export const initialState = (): GameState => ({
     lastTick: 0,
   },
   quality: "balanced",
+  brightness: 1.25,
+  audio: { muted: false, music: 0.45, sfx: 0.7 },
   log: [],
   nextLineId: 1,
 });
@@ -113,16 +118,21 @@ export type MiningReadout = {
   costPerSec: number;
   netPerSec: number;
   price: number;
+  bid: number;
+  ask: number;
+  spreadPct: number;
+  change24h: number;
+  regime: Regime;
+  difficulty: number;
+  contract: ContractRead;
+  overageW: number;
+  breakEven: number;
+  dailyNet: number;
+  limiter: string;
 };
 
 export const coinPrice = (coin: Coin, at: number): number => {
-  const c = COINS[coin];
-  const t = at / 60000;
-  const wave =
-    Math.sin(t * 0.7 + coin.length) * 0.6 +
-    Math.sin(t * 0.23 + 1.7) * 0.3 +
-    Math.sin(t * 2.1) * 0.1;
-  return Math.max(1, c.base * (1 + wave * c.vol));
+  return quote(coin, at).mid;
 };
 
 export const deriveMining = (s: GameState, at: number): MiningReadout => {
@@ -152,24 +162,51 @@ export const deriveMining = (s: GameState, at: number): MiningReadout => {
     heat += m.heat * count;
   });
   cooling += stats.coolingWatts / 100;
-  const contract = itemById(s.mining.contract)?.mining;
-  const capacityW = (contract?.capacityKw ?? 7) * 1000;
-  const pricePerKwh = contract?.pricePerKwh ?? 0.34;
+  const contract = contractRead(s.mining.contract, at);
+  const capacityW = contract.capacityW;
 
-  const powerThrottle = watts > capacityW ? capacityW / watts : 1;
+  // Over-capacity draw is allowed but billed at a punitive rate, and the
+  // breaker sags: only a small amount of overdraw is tolerated.
+  const overageW = Math.max(0, watts - capacityW);
+  const powerThrottle = watts > capacityW * 1.25 ? (capacityW * 1.25) / watts : 1;
   const heatLoad = Math.max(0, heat - cooling);
   const heatThrottle = heatLoad > 0 ? Math.max(0.15, 1 - heatLoad / 120) : 1;
   const slotThrottle = slotsUsed > slots ? Math.max(0.2, slots / Math.max(1, slotsUsed)) : 1;
   const throttle = powerThrottle * heatThrottle * slotThrottle;
 
   const effectiveHash = hash * throttle * stats.miningMul;
-  const coinPerSec = effectiveHash * COINS[s.mining.coin].perHash;
-  const price = coinPrice(s.mining.coin, at);
-  const costPerSec = ((watts * throttle) / 1000) * pricePerKwh / 3600;
+  const diff = difficulty(s.mining.coin, at, effectiveHash);
+  const coinPerSec = (effectiveHash * COINS[s.mining.coin].perHash) / diff;
+  const q = quote(s.mining.coin, at);
+  const drawnW = watts * throttle;
+  const billedOverW = Math.max(0, drawnW - capacityW);
+  const energyCost =
+    (((drawnW - billedOverW) / 1000) * contract.rate +
+      (billedOverW / 1000) * contract.rate * contract.overageMul) /
+    3600;
+  const demandCost = (contract.demandPerKw * (drawnW / 1000)) / 3600;
+  const costPerSec = energyCost + demandCost;
+
+  const breakEven = coinPerSec > 0 ? costPerSec / coinPerSec : 0;
+  const netPerSec = coinPerSec * q.bid - costPerSec;
+
+  const limiter =
+    slotsUsed > slots
+      ? "RACK SLOTS"
+      : heatThrottle < 0.92
+        ? "THERMALS"
+        : powerThrottle < 1
+          ? "POWER CEILING"
+          : overageW > 0
+            ? "OVERAGE BILLING"
+            : hash === 0
+              ? "NO HARDWARE"
+              : "NONE";
+
   return {
     hash,
     effectiveHash,
-    watts: Math.round(watts * throttle),
+    watts: Math.round(drawnW),
     capacityW,
     heatLoad,
     coolingCap: cooling,
@@ -178,8 +215,19 @@ export const deriveMining = (s: GameState, at: number): MiningReadout => {
     slotsUsed,
     coinPerSec,
     costPerSec,
-    netPerSec: coinPerSec * price - costPerSec,
-    price,
+    netPerSec,
+    price: q.mid,
+    bid: q.bid,
+    ask: q.ask,
+    spreadPct: q.spreadPct,
+    change24h: q.change24h,
+    regime: q.regime,
+    difficulty: diff,
+    contract,
+    overageW,
+    breakEven,
+    dailyNet: netPerSec * 86400,
+    limiter,
   };
 };
 
@@ -192,6 +240,10 @@ export const evidencePct = (s: GameState, id: string): number => {
 
 export type Action =
   | { type: "boot" }
+  | { type: "login"; handle: string }
+  | { type: "logout" }
+  | { type: "brightness"; value: number }
+  | { type: "audio"; patch: Partial<AudioSettings> }
   | { type: "tab"; tab: TabId }
   | { type: "select"; id: string }
   | { type: "log"; text: string; tone?: Tone }
@@ -204,7 +256,7 @@ export type Action =
   | { type: "mining-unit"; id: string; delta: number }
   | { type: "mining-contract"; id: string }
   | { type: "mining-accrue"; coin: Coin; amount: number; cost: number; at: number }
-  | { type: "sell"; coin: Coin; price: number }
+  | { type: "sell"; coin: Coin; at: number }
   | { type: "quality"; quality: Quality }
   | { type: "restore"; saved: Partial<GameState> }
   | { type: "reset" };
@@ -235,11 +287,22 @@ const withHeat = (s: GameState, delta: number): GameState => {
 export const reducer = (s: GameState, a: Action): GameState => {
   switch (a.type) {
     case "boot": {
-      let next: GameState = { ...s, phase: "online" };
-      next = pushLog(next, "H.C.C console online. Operator authenticated.", "ok");
+      return { ...s, phase: "auth" };
+    }
+    case "login": {
+      const handle = a.handle.trim().slice(0, 18) || "GHOSTHAND";
+      let next: GameState = { ...s, phase: "online", operator: handle };
+      next = pushLog(next, `H.C.C console online. Welcome back, ${handle}.`, "ok");
+      next = pushLog(next, "Clearance TASK-FORCE / BLACKSITE granted.", "sys");
       next = pushLog(next, "Four active cases loaded from the field queue.", "sys");
       return next;
     }
+    case "logout":
+      return { ...s, phase: "auth", operator: null };
+    case "brightness":
+      return { ...s, brightness: Math.max(0.6, Math.min(2.4, a.value)) };
+    case "audio":
+      return { ...s, audio: { ...s.audio, ...a.patch } };
     case "tab":
       return { ...s, tab: a.tab };
     case "select":
@@ -344,8 +407,23 @@ export const reducer = (s: GameState, a: Action): GameState => {
     }
     case "mining-coin":
       return pushLog({ ...s, mining: { ...s.mining, coin: a.coin } }, `Mining switched to ${a.coin}.`, "sys");
-    case "mining-contract":
-      return { ...s, mining: { ...s.mining, contract: a.id } };
+    case "mining-contract": {
+      if (a.id === s.mining.contract) return s;
+      const fee = itemById(s.mining.contract)?.mining?.switchFee ?? 0;
+      if (fee > s.credits) return pushLog(s, `Switch fee of ${fee.toLocaleString()} cr unaffordable.`, "warn");
+      const next: GameState = {
+        ...s,
+        credits: s.credits - fee,
+        mining: { ...s.mining, contract: a.id },
+      };
+      return pushLog(
+        next,
+        fee > 0
+          ? `Power contract switched. Early-termination fee ${fee.toLocaleString()} cr.`
+          : "Power contract switched.",
+        fee > 0 ? "warn" : "sys",
+      );
+    }
     case "mining-unit": {
       const cur = s.mining.units[a.id] ?? 0;
       const nextCount = Math.max(0, cur + a.delta);
@@ -364,13 +442,20 @@ export const reducer = (s: GameState, a: Action): GameState => {
     case "sell": {
       const amount = s.mining.balances[a.coin];
       if (amount <= 0) return s;
-      const gross = Math.round(amount * a.price);
+      const sq = sellQuote(a.coin, a.at, amount);
+      const gross = Math.round(sq.gross);
       let next: GameState = {
         ...s,
         credits: s.credits + gross,
         mining: { ...s.mining, balances: { ...s.mining.balances, [a.coin]: 0 } },
       };
-      return pushLog(next, `Sold ${amount.toFixed(6)} ${a.coin} for ${gross.toLocaleString()} cr.`, "ok");
+      return pushLog(
+        next,
+        `Filled ${amount.toFixed(6)} ${a.coin} at ${Math.round(sq.price).toLocaleString()} cr` +
+          ` (spread ${(sq.quote.spreadPct * 100).toFixed(2)}%, slip ${(sq.slip * 100).toFixed(2)}%)` +
+          ` → ${gross.toLocaleString()} cr.`,
+        "ok",
+      );
     }
     case "quality":
       return { ...s, quality: a.quality };

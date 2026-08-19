@@ -138,3 +138,35 @@ export function Chip({ children, tone = "dim" }: { children: ReactNode; tone?: "
     </span>
   );
 }
+
+export function Sparkline({
+  values,
+  className,
+  up = true,
+}: {
+  values: readonly number[];
+  className?: string;
+  up?: boolean;
+}) {
+  if (values.length < 2) return <div className={className} />;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const pts = values.map((v, i) => {
+    const x = (i / (values.length - 1)) * 100;
+    const y = 100 - ((v - min) / span) * 92 - 4;
+    return `${x.toFixed(2)},${y.toFixed(2)}`;
+  });
+  const stroke = up ? "var(--hud-green, #39ff9e)" : "var(--hud-red, #ff3355)";
+  return (
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className={className} aria-hidden>
+      <polyline
+        points={`0,100 ${pts.join(" ")} 100,100`}
+        fill={stroke}
+        fillOpacity="0.1"
+        stroke="none"
+      />
+      <polyline points={pts.join(" ")} fill="none" stroke={stroke} strokeWidth="1.4" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}

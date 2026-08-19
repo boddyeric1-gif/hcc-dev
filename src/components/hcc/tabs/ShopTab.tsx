@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { Chip, HudButton, Panel, Stat } from "../ui";
+import { audio } from "@/lib/hcc/audio";
 import { useGame } from "@/lib/hcc/store";
 import { itemById } from "@/lib/hcc/catalog";
 import { rankIndex, shopItems } from "@/lib/hcc/state";
@@ -84,7 +85,10 @@ export default function ShopTab() {
                     size="sm"
                     tone={locked ? "ghost" : "green"}
                     disabled={locked || !afford || (owned && !it.stackable)}
-                    onClick={() => dispatch({ type: "buy", id: it.id })}
+                    onClick={() => {
+                      audio.sfx("buy");
+                      dispatch({ type: "buy", id: it.id });
+                    }}
                   >
                     {locked
                       ? `Rank ${(it.rank ?? 0) + 1}`

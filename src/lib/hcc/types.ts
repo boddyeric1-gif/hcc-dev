@@ -76,6 +76,16 @@ export type MiningSpec = {
   readonly capacityKw?: number;
   readonly pricePerKwh?: number;
   readonly slots?: number;
+  /** contract only — multiplier applied to the rate during peak hours */
+  readonly peakMul?: number;
+  /** contract only — multiplier applied to the rate during off-peak hours */
+  readonly offPeakMul?: number;
+  /** contract only — penalty multiplier on power drawn above the ceiling */
+  readonly overageMul?: number;
+  /** contract only — flat fee charged when switching away early */
+  readonly switchFee?: number;
+  /** contract only — monthly-equivalent demand charge per installed kW, per second */
+  readonly demandPerKw?: number;
 };
 
 export type Item = {
@@ -104,8 +114,15 @@ export type MiningState = {
   readonly lastTick: number;
 };
 
+export type AudioSettings = {
+  readonly muted: boolean;
+  readonly music: number;
+  readonly sfx: number;
+};
+
 export type GameState = {
-  readonly phase: "offline" | "booting" | "online";
+  readonly phase: "offline" | "auth" | "online";
+  readonly operator: string | null;
   readonly tab: TabId;
   readonly credits: number;
   readonly intel: number;
@@ -118,6 +135,8 @@ export type GameState = {
   readonly perks: readonly string[];
   readonly mining: MiningState;
   readonly quality: Quality;
+  readonly brightness: number;
+  readonly audio: AudioSettings;
   readonly log: readonly LogLine[];
   readonly nextLineId: number;
 };

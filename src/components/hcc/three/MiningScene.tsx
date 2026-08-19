@@ -4,6 +4,7 @@ import { RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
 
 import SceneFrame from "./SceneFrame";
+import LightShafts from "./Volumetrics";
 import type { Quality } from "@/lib/hcc/types";
 
 export type MiningVisual = {
@@ -115,7 +116,15 @@ function Shelf({ x, levels, accent }: { x: number; levels: number; accent: strin
   );
 }
 
-export default function MiningScene({ v, quality }: { v: MiningVisual; quality: Quality }) {
+export default function MiningScene({
+  v,
+  quality,
+  brightness = 1.25,
+}: {
+  v: MiningVisual;
+  quality: Quality;
+  brightness?: number;
+}) {
   const hot = v.heatRatio > 0.75;
   const shelves = Math.max(1, Math.min(3, v.shelves || 1));
   const positions: { p: [number, number, number]; asic: boolean }[] = [];
@@ -133,15 +142,29 @@ export default function MiningScene({ v, quality }: { v: MiningVisual; quality: 
   }
 
   return (
-    <SceneFrame quality={quality} camera={[0.4, 1.6, 3.3]} target={[0, 0.85, -0.8]} maxDistance={7}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[26, 26]} />
-        <meshStandardMaterial color="#0a0d12" roughness={0.5} metalness={0.4} />
-      </mesh>
+    <SceneFrame
+      quality={quality}
+      brightness={brightness}
+      camera={[0.4, 1.6, 3.3]}
+      target={[0, 0.85, -0.8]}
+      maxDistance={7}
+    >
       <mesh position={[0, 2.2, -2.4]} receiveShadow>
         <planeGeometry args={[14, 5]} />
-        <meshStandardMaterial color={hot ? "#160d10" : "#0c1117"} roughness={0.92} />
+        <meshStandardMaterial color={hot ? "#241318" : "#141c26"} roughness={0.9} />
       </mesh>
+
+      <LightShafts
+        positions={[
+          [-1.5, 3.1, -1.1],
+          [0, 3.1, -1.1],
+          [1.5, 3.1, -1.1],
+        ]}
+        color={hot ? "#ff7a8c" : "#bcd9ff"}
+        height={3.1}
+        radius={0.85}
+        opacity={quality === "performance" ? 0.03 : 0.06}
+      />
 
       {Array.from({ length: shelves }).map((_, i) => (
         <Shelf key={i} x={(i - (shelves - 1) / 2) * 1.25} levels={3} accent={v.accent} />
@@ -164,9 +187,17 @@ export default function MiningScene({ v, quality }: { v: MiningVisual; quality: 
         />
       ))}
 
-      <pointLight position={[0, 2.2, -0.6]} intensity={12} distance={9} color={hot ? "#ff5470" : v.accent} />
-      <pointLight position={[-2.4, 1.6, 1.2]} intensity={5} distance={8} color="#2f6bff" />
-      <spotLight position={[0, 3.4, 1.6]} angle={0.8} penumbra={1} intensity={18} color="#a9d6ff" castShadow />
+      <pointLight position={[0, 2.2, -0.6]} intensity={16} distance={11} color={hot ? "#ff5470" : v.accent} />
+      <pointLight position={[-2.4, 1.6, 1.2]} intensity={8} distance={9} color="#4f86ff" />
+      <pointLight position={[2.2, 1.4, 0.8]} intensity={6} distance={9} color="#a9d6ff" />
+      <spotLight
+        position={[0, 3.4, 1.6]}
+        angle={0.9}
+        penumbra={1}
+        intensity={34}
+        color="#cfe6ff"
+        castShadow={quality !== "performance"}
+      />
     </SceneFrame>
   );
 }
