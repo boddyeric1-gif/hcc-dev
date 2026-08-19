@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { HudButton, Panel } from "../ui";
-import { buildPorts, mulberry } from "@/lib/hcc/puzzles";
+import { buildPorts, digitSum, mulberry } from "@/lib/hcc/puzzles";
 import type { OpDifficulty } from "@/lib/hcc/puzzles";
 import { cn } from "@/lib/utils";
 import type { Target } from "@/lib/hcc/types";
