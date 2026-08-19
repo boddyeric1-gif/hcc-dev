@@ -144,6 +144,7 @@ export type GameState = {
   readonly quality: Quality;
   readonly brightness: number;
   readonly audio: AudioSettings;
+  readonly guideSeen: boolean;
   readonly log: readonly LogLine[];
   readonly nextLineId: number;
 };
@@ -155,6 +156,7 @@ export type TabId =
   | "rig"
   | "mining"
   | "shop"
-  | "case";
+  | "case"
+  | "guide";
 
 export type Rng = () => number;
