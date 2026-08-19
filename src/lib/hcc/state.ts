@@ -3,6 +3,7 @@ import { contractRead, difficulty, quote, sellQuote, type ContractRead, type Reg
 import { TARGETS, targetById } from "./targets";
 import type {
   AudioSettings,
+  Target,
   Coin,
   GameState,
   Item,
@@ -50,6 +51,7 @@ export const initialState = (): GameState => ({
   heat: 0,
   takedowns: 0,
   selected: TARGETS[0]!.id,
+  generated: [],
   progress: Object.fromEntries(
     TARGETS.map((t) => [t.id, { evidence: [], seized: false }]),
   ),
@@ -231,9 +233,15 @@ export const deriveMining = (s: GameState, at: number): MiningReadout => {
   };
 };
 
+/** Base cases plus every procedurally generated target, newest first. */
+export const allTargets = (s: GameState): readonly Target[] => [...s.generated, ...TARGETS];
+
+export const findTarget = (s: GameState, id: string | null | undefined): Target | undefined =>
+  id ? (s.generated.find((t) => t.id === id) ?? targetById(id)) : undefined;
+
 export const evidencePct = (s: GameState, id: string): number => {
   const p = s.progress[id];
-  const t = targetById(id);
+  const t = findTarget(s, id);
   if (!p || !t) return 0;
   return Math.round((p.evidence.length / t.ops.length) * 100);
 };
@@ -246,6 +254,7 @@ export type Action =
   | { type: "audio"; patch: Partial<AudioSettings> }
   | { type: "tab"; tab: TabId }
   | { type: "select"; id: string }
+  | { type: "spawn"; target: Target }
   | { type: "log"; text: string; tone?: Tone }
   | { type: "op"; targetId: string; kind: OpKind; success: boolean }
   | { type: "report"; targetId: string }
@@ -294,7 +303,7 @@ export const reducer = (s: GameState, a: Action): GameState => {
       let next: GameState = { ...s, phase: "online", operator: handle };
       next = pushLog(next, `H.C.C console online. Welcome back, ${handle}.`, "ok");
       next = pushLog(next, "Clearance TASK-FORCE / BLACKSITE granted.", "sys");
-      next = pushLog(next, "Four active cases loaded from the field queue.", "sys");
+      next = pushLog(next, `${allTargets(next).filter((t) => !next.progress[t.id]?.seized).length} active cases loaded from the field queue.`, "sys");
       return next;
     }
     case "logout":
@@ -307,10 +316,21 @@ export const reducer = (s: GameState, a: Action): GameState => {
       return { ...s, tab: a.tab };
     case "select":
       return { ...s, selected: a.id };
+    case "spawn": {
+      if (s.generated.some((t) => t.id === a.target.id)) return s;
+      let next: GameState = {
+        ...s,
+        generated: [a.target, ...s.generated].slice(0, 24),
+        progress: { ...s.progress, [a.target.id]: { evidence: [], seized: false } },
+      };
+      next = pushLog(next, `NEW CYBER CRIMINAL DETECTED — ${a.target.codename} (${a.target.threat}).`, "warn");
+      next = pushLog(next, `${a.target.allegation} · host ${a.target.host} · bounty ${a.target.bounty.toLocaleString()} cr`, "sys");
+      return next;
+    }
     case "log":
       return pushLog(s, a.text, a.tone ?? "sys");
     case "op": {
-      const t = targetById(a.targetId);
+      const t = findTarget(s, a.targetId);
       if (!t) return s;
       const op = t.ops.find((o) => o.kind === a.kind);
       if (!op) return s;
@@ -337,7 +357,7 @@ export const reducer = (s: GameState, a: Action): GameState => {
       return next;
     }
     case "report": {
-      const t = targetById(a.targetId);
+      const t = findTarget(s, a.targetId);
       const p = s.progress[a.targetId];
       if (!t || !p || p.seized) return s;
       if (p.evidence.length < t.ops.length) {
@@ -469,6 +489,7 @@ export const reducer = (s: GameState, a: Action): GameState => {
         tab: s.tab,
         log: s.log,
         nextLineId: s.nextLineId,
+        generated: sv.generated ?? [],
         progress: { ...base.progress, ...(sv.progress ?? {}) },
         installed: { ...base.installed, ...(sv.installed ?? {}) },
         owned: Array.from(new Set([...base.owned, ...(sv.owned ?? [])])),

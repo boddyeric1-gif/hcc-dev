@@ -129,6 +129,7 @@ export type GameState = {
   readonly heat: number;
   readonly takedowns: number;
   readonly selected: string | null;
+  readonly generated: readonly Target[];
   readonly progress: Readonly<Record<string, TargetProgress>>;
   readonly owned: readonly string[];
   readonly installed: Readonly<Partial<Record<Slot, string>>>;
