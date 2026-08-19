@@ -47,9 +47,9 @@ export default function SceneFrame({
         enableDamping
         dampingFactor={0.08}
       />
-      <ambientLight intensity={0.18} color="#4a6a8a" />
+      <ambientLight intensity={0.3} color="#4a6a8a" />
       <Suspense fallback={null}>
-        <Environment preset="night" environmentIntensity={0.35} />
+        <Environment preset="night" environmentIntensity={0.5} />
         {children}
       </Suspense>
       <ContactShadows

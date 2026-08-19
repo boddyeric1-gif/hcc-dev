@@ -178,7 +178,7 @@ function Peripherals({ accent }: { accent: string }) {
 function Chair({ tier }: { tier: number }) {
   const color = tier >= 3 ? "#171a1f" : "#141821";
   return (
-    <group position={[0, 0, 1.15]}>
+    <group position={[0, 0, 1.45]}>
       <mesh position={[0, 0.05, 0]} castShadow>
         <cylinderGeometry args={[0.32, 0.36, 0.05, 24]} />
         <meshStandardMaterial color="#0d1015" roughness={0.4} metalness={0.8} />
@@ -264,7 +264,7 @@ export default function RigScene({ v, quality }: { v: RigVisual; quality: Qualit
   }, [v.monitors, texA, texB, texC]);
 
   return (
-    <SceneFrame quality={quality} camera={[0.1, 1.5, 2.9]} target={[0, 1.02, -0.1]}>
+    <SceneFrame quality={quality} camera={[0.25, 1.95, 3.5]} target={[0, 1.0, -0.35]}>
       <Room accent={v.accent} />
       <Desk tier={v.desk} accent={v.accent} mat={v.deskmat} />
       {monitors.map((m, i) => (
