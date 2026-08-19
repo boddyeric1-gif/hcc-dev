@@ -1,32 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { HudButton, Panel } from "../ui";
+import { buildLedger, mulberry } from "@/lib/hcc/puzzles";
+import type { OpDifficulty } from "@/lib/hcc/puzzles";
 import { cn } from "@/lib/utils";
-import type { Target } from "@/lib/hcc/types";
 
 export default function LedgerTrace({
-  target,
-  length,
+  diff,
+  seed,
   onDone,
 }: {
-  target: Target;
-  length: number;
+  diff: OpDifficulty;
+  seed: number;
   onDone: (s: boolean) => void;
 }) {
-  const nodes = useMemo(
-    () =>
-      Array.from({ length: 6 }, (_, i) => ({
-        id: i,
-        label: `0x${((target.id.charCodeAt(0) + i * 37) * 991).toString(16).slice(0, 4)}`,
-      })),
-    [target.id],
-  );
-  const seq = useMemo(
-    () =>
-      Array.from({ length }, (_, i) =>
-        Math.floor((Math.sin((target.id.length + i) * 91.7) * 0.5 + 0.5) * 6) % 6,
-      ),
-    [target.id, length],
+  const { labels, seq } = useMemo(
+    () => buildLedger(mulberry(seed), diff.ledgerNodes, diff.hops),
+    [seed, diff.ledgerNodes, diff.hops],
   );
   const [phase, setPhase] = useState<"show" | "input" | "win" | "lose">("show");
   const [cursor, setCursor] = useState(0);
@@ -40,27 +30,28 @@ export default function LedgerTrace({
       return () => window.clearTimeout(t);
     }
     setActive(seq[cursor] ?? null);
-    const off = window.setTimeout(() => setActive(null), 420);
-    const nxt = window.setTimeout(() => setCursor((c) => c + 1), 700);
+    const off = window.setTimeout(() => setActive(null), diff.ledgerShowMs * 0.6);
+    const nxt = window.setTimeout(() => setCursor((c) => c + 1), diff.ledgerShowMs);
     return () => {
       window.clearTimeout(off);
       window.clearTimeout(nxt);
     };
-  }, [phase, cursor, seq]);
+  }, [phase, cursor, seq, diff.ledgerShowMs]);
 
   return (
     <Panel label="LEDGER TRACE" className="p-3">
       <p className="mb-3 text-xs text-muted-foreground">
-        Follow the settlement path through the mixer, then replay it hop by hop.
+        Follow the settlement path through the mixer, then replay it hop by hop. {diff.hops} hops, new route
+        every attempt.
       </p>
       <div className="mb-3 grid grid-cols-3 gap-2">
-        {nodes.map((n) => (
+        {labels.map((label, id) => (
           <button
-            key={n.id}
+            key={`${label}-${id}`}
             type="button"
             disabled={phase !== "input"}
             onClick={() => {
-              if (seq[step] === n.id) {
+              if (seq[step] === id) {
                 const next = step + 1;
                 setStep(next);
                 if (next >= seq.length) setPhase("win");
@@ -70,13 +61,13 @@ export default function LedgerTrace({
             }}
             className={cn(
               "rounded-md border py-3 font-mono text-[10px] transition-all duration-200",
-              active === n.id
+              active === id
                 ? "border-hud-green bg-hud-green/20 text-hud-green text-glow scale-105"
                 : "border-border bg-secondary/30 text-muted-foreground",
               phase === "input" && "hover:border-hud-cyan/60",
             )}
           >
-            {n.label}
+            {label}
           </button>
         ))}
       </div>

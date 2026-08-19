@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 
 import { HudButton, Panel } from "../ui";
+import { buildCipher, mulberry } from "@/lib/hcc/puzzles";
+import type { OpDifficulty } from "@/lib/hcc/puzzles";
 import { cn } from "@/lib/utils";
 import type { Target } from "@/lib/hcc/types";
 
@@ -11,28 +13,30 @@ const shiftText = (t: string, by: number) =>
 
 export default function Cipher({
   target,
-  attempts,
+  diff,
+  seed,
   onDone,
 }: {
   target: Target;
-  attempts: number;
+  diff: OpDifficulty;
+  seed: number;
   onDone: (s: boolean) => void;
 }) {
-  const plain = useMemo(
-    () => `escrow archive key ${target.operator.alias} node seven`,
-    [target.operator.alias],
+  const { plain, key } = useMemo(
+    () => buildCipher(mulberry(seed), target.operator.alias),
+    [seed, target.operator.alias],
   );
-  const key = useMemo(() => 3 + (target.id.length % 19), [target.id]);
   const cipher = useMemo(() => shiftText(plain, key), [plain, key]);
   const [shift, setShift] = useState(0);
-  const [left, setLeft] = useState(attempts);
+  const [left, setLeft] = useState(diff.cipherAttempts);
   const [state, setState] = useState<"open" | "win" | "lose">("open");
   const preview = shiftText(cipher, -shift);
 
   return (
     <Panel label="CIPHER WHEEL" className="p-3">
       <p className="mb-3 text-xs text-muted-foreground">
-        Rotate the substitution wheel until the intercepted archive header reads as plain language.
+        Rotate the substitution wheel until the intercepted archive header reads as plain language. The key
+        is regenerated for every intercept.
       </p>
       <div className="mb-3 rounded-md border border-border bg-background/60 p-3 font-mono text-[11px] break-all">
         <div className="mb-1 text-[9px] tracking-[0.2em] text-muted-foreground">INTERCEPT</div>

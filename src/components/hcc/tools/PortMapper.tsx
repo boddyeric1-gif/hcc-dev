@@ -1,49 +1,44 @@
 import { useMemo, useState } from "react";
 
 import { HudButton, Panel } from "../ui";
+import { buildPorts, mulberry } from "@/lib/hcc/puzzles";
+import type { OpDifficulty } from "@/lib/hcc/puzzles";
 import { cn } from "@/lib/utils";
 import type { Target } from "@/lib/hcc/types";
 
-const seeded = (s: string, i: number) => {
-  const h = Math.sin(s.length * 12.9898 + i * 78.233) * 43758.5453;
-  return h - Math.floor(h);
-};
-
 export default function PortMapper({
   target,
-  probes,
+  diff,
+  seed,
   onDone,
 }: {
   target: Target;
-  probes: number;
+  diff: OpDifficulty;
+  seed: number;
   onDone: (success: boolean) => void;
 }) {
   const ports = useMemo(
-    () =>
-      Array.from({ length: 12 }, (_, i) => ({
-        num: 1024 + Math.floor(seeded(target.id, i) * 60000),
-        live: seeded(target.id + "L", i) > 0.76,
-      })),
-    [target.id],
+    () => buildPorts(mulberry(seed), diff.grid, diff.liveServices),
+    [seed, diff.grid, diff.liveServices],
   );
-  const liveCount = ports.filter((p) => p.live).length || 1;
   const [opened, setOpened] = useState<number[]>([]);
   const [used, setUsed] = useState(0);
   const found = opened.filter((i) => ports[i]?.live).length;
-  const out = used >= probes;
-  const win = found >= liveCount;
+  const win = found >= diff.liveServices;
+  const out = !win && used >= diff.probes;
 
   return (
     <Panel label="PORT MAPPER" className="p-3">
       <p className="mb-3 text-xs text-muted-foreground">
-        Probe the perimeter of {target.host}. Find every responding service before your probe budget runs out.
+        Probe the perimeter of {target.host}. Find all {diff.liveServices} responding services before your
+        probe budget runs out. The map is regenerated every attempt.
       </p>
       <div className="mb-3 grid grid-cols-4 gap-2">
         {ports.map((p, i) => {
           const isOpen = opened.includes(i);
           return (
             <button
-              key={i}
+              key={p.num}
               type="button"
               disabled={isOpen || out || win}
               onClick={() => {
@@ -64,10 +59,10 @@ export default function PortMapper({
       </div>
       <div className="flex items-center justify-between text-[10px] tracking-[0.18em] text-muted-foreground">
         <span>
-          PROBES {probes - used}/{probes}
+          PROBES {Math.max(0, diff.probes - used)}/{diff.probes}
         </span>
         <span>
-          SERVICES {found}/{liveCount}
+          SERVICES {found}/{diff.liveServices}
         </span>
       </div>
       {(win || out) && (
