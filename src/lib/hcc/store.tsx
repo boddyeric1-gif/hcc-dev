@@ -4,10 +4,23 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useRef,
   type ReactNode,
 } from "react";
 
-import { coinPrice, deriveMining, deriveStats, initialState, reducer, type Action } from "./state";
+import { audio } from "./audio";
+import { generateTarget } from "./generator";
+import { activeNews } from "./news";
+import {
+  allTargets,
+  coinPrice,
+  deriveMining,
+  deriveStats,
+  initialState,
+  rankIndex,
+  reducer,
+  type Action,
+} from "./state";
 import type { GameState } from "./types";
 
 const KEY = "hcc.save.v2";
@@ -21,6 +34,8 @@ const GameContext = createContext<Ctx | null>(null);
 
 export function GameProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   // restore
   useEffect(() => {
@@ -61,6 +76,50 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }, 2000);
     return () => window.clearInterval(id);
   }, [state]);
+
+  // market news + macro shocks announce themselves in the event stream
+  useEffect(() => {
+    if (state.phase !== "online") return;
+    const seen = new Set<string>();
+    activeNews(Date.now()).forEach((e) => seen.add(e.id));
+    const id = window.setInterval(() => {
+      activeNews(Date.now()).forEach((e) => {
+        if (seen.has(e.id)) return;
+        seen.add(e.id);
+        audio.sfx("alert");
+        dispatch({
+          type: "log",
+          text: `MARKET WIRE — ${e.headline}. ${e.detail}`,
+          tone: e.tone === "bear" ? "bad" : e.tone === "bull" ? "ok" : "warn",
+        });
+      });
+    }, 5000);
+    return () => window.clearInterval(id);
+  }, [state.phase]);
+
+  // enemy generator: new criminals surface at random intervals, forever
+  useEffect(() => {
+    if (state.phase !== "online") return;
+    let timer = 0;
+    const schedule = (ms: number) => {
+      timer = window.setTimeout(() => {
+        const s = stateRef.current;
+        const open = allTargets(s).filter((t) => !s.progress[t.id]?.seized).length;
+        if (open < 9) {
+          const target = generateTarget({
+            rank: rankIndex(s.intel),
+            seq: s.generated.length + 1,
+          });
+          dispatch({ type: "spawn", target });
+          audio.sfx("alert");
+          audio.speak("New cyber criminal detected");
+        }
+        schedule(70000 + Math.random() * 110000);
+      }, ms);
+    };
+    schedule(30000 + Math.random() * 40000);
+    return () => window.clearTimeout(timer);
+  }, [state.phase]);
 
   const value = useMemo(() => ({ state, dispatch }), [state]);
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

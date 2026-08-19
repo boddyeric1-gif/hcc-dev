@@ -74,7 +74,7 @@ class HccAudio {
     this.ambBus = mk(0.9);
 
     this.buildAmbience();
-    this.startMusic();
+    this.startAmbience();
     this.started = true;
     this.applySettings();
     master.gain.setTargetAtTime(this.settings.muted ? 0 : 1, ctx.currentTime, 0.6);
@@ -175,62 +175,127 @@ class HccAudio {
     this.whineOsc?.frequency.setTargetAtTime(2100 + f.load * 900 + f.heat * 600, t, 1.5);
   }
 
-  // ── music: slow sci-fi pad + sparse arpeggio ──────────────────────────────
-  private startMusic(): void {
+  // ── ambient bed: low electrical hum, occasional beeps, relay clicks ───────
+  private startAmbience(): void {
     if (this.musicTimer !== null) return;
     const ctx = this.ctx!;
+    const bus = this.musicBus!;
 
-    // drone pad
-    const pad = ctx.createGain();
-    pad.gain.value = 0.055;
-    const padFilter = ctx.createBiquadFilter();
-    padFilter.type = "lowpass";
-    padFilter.frequency.value = 900;
-    pad.connect(padFilter).connect(this.musicBus!);
-    [110, 164.81, 220, 329.63].forEach((f, i) => {
+    // deep electrical hum — transformer drone under everything
+    const humOut = ctx.createGain();
+    humOut.gain.value = 0.5;
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 240;
+    humOut.connect(lp).connect(bus);
+    [40, 60, 120, 180].forEach((f, i) => {
       const o = ctx.createOscillator();
-      o.type = i % 2 ? "sine" : "triangle";
+      o.type = i > 1 ? "triangle" : "sine";
       o.frequency.value = f;
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = 0.05 + i * 0.017;
-      const lg = ctx.createGain();
-      lg.gain.value = 0.9 + i;
-      lfo.connect(lg).connect(o.frequency);
-      lfo.start();
       const g = ctx.createGain();
-      g.gain.value = 0.22 / (i + 1);
-      o.connect(g).connect(pad);
+      g.gain.value = [0.09, 0.07, 0.03, 0.014][i]!;
+      // slow amplitude wander so it breathes like a real room
+      const lfo = ctx.createOscillator();
+      lfo.frequency.value = 0.03 + i * 0.011;
+      const lg = ctx.createGain();
+      lg.gain.value = g.gain.value * 0.45;
+      lfo.connect(lg).connect(g.gain);
+      lfo.start();
+      o.connect(g).connect(humOut);
       o.start();
     });
 
-    const scale = [220, 261.63, 293.66, 329.63, 392, 440, 523.25, 587.33];
+    // faint mains buzz layer
+    const buzz = ctx.createBufferSource();
+    buzz.buffer = this.noiseBuffer();
+    buzz.loop = true;
+    const bp = ctx.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = 90;
+    bp.Q.value = 3;
+    const bg = ctx.createGain();
+    bg.gain.value = 0.05;
+    buzz.connect(bp).connect(bg).connect(bus);
+    buzz.start();
+
+    // occasional telemetry beeps, relay clicks and disk chatter
     this.musicTimer = window.setInterval(() => {
       if (!this.ctx || this.settings.muted || this.settings.music <= 0.001) return;
-      this.step += 1;
-      if (this.step % 2 === 0 && Math.random() > 0.45) return;
-      const note = scale[Math.floor(Math.random() * scale.length)]!;
-      this.pluck(note * (Math.random() > 0.8 ? 2 : 1), 0.9, this.musicBus!);
-      if (this.step % 8 === 0) this.pluck(note / 2, 2.4, this.musicBus!, 0.35);
-    }, 640);
+      const r = Math.random();
+      if (r < 0.34) this.beep(660 + Math.round(Math.random() * 4) * 110);
+      else if (r < 0.5) this.beep(420, 0.05, 0.05);
+      else if (r < 0.68) this.relay();
+      else if (r < 0.78) this.sweepTick();
+    }, 2600);
   }
 
-  private pluck(freq: number, dur: number, bus: GainNode, amp = 0.16): void {
+  private beep(freq: number, dur = 0.09, amp = 0.055): void {
     const ctx = this.ctx!;
-    const t = ctx.currentTime;
+    const bus = this.musicBus!;
+    const t = ctx.currentTime + Math.random() * 0.4;
     const o = ctx.createOscillator();
-    o.type = "triangle";
+    o.type = "sine";
     o.frequency.value = freq;
-    const f = ctx.createBiquadFilter();
-    f.type = "lowpass";
-    f.frequency.setValueAtTime(2600, t);
-    f.frequency.exponentialRampToValueAtTime(600, t + dur);
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(amp, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(amp, t + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(f).connect(g).connect(bus);
+    o.connect(g).connect(bus);
     o.start(t);
     o.stop(t + dur + 0.05);
+  }
+
+  private relay(): void {
+    const ctx = this.ctx!;
+    const bus = this.musicBus!;
+    const t = ctx.currentTime + Math.random() * 0.6;
+    const src = ctx.createBufferSource();
+    src.buffer = this.noiseBuffer();
+    const f = ctx.createBiquadFilter();
+    f.type = "bandpass";
+    f.frequency.value = 1400 + Math.random() * 1800;
+    f.Q.value = 6;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.05, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+    src.connect(f).connect(g).connect(bus);
+    src.start(t);
+    src.stop(t + 0.1);
+  }
+
+  private sweepTick(): void {
+    const ctx = this.ctx!;
+    const bus = this.musicBus!;
+    const t = ctx.currentTime + Math.random() * 0.5;
+    const o = ctx.createOscillator();
+    o.type = "triangle";
+    o.frequency.setValueAtTime(300, t);
+    o.frequency.exponentialRampToValueAtTime(1500, t + 0.5);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.022, t + 0.12);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55);
+    o.connect(g).connect(bus);
+    o.start(t);
+    o.stop(t + 0.6);
+  }
+
+  /** Spoken alert in a female voice where the platform offers one. */
+  speak(text: string): void {
+    if (this.settings.muted || typeof window === "undefined" || !window.speechSynthesis) return;
+    const synth = window.speechSynthesis;
+    const u = new SpeechSynthesisUtterance(text);
+    const voices = synth.getVoices();
+    const female =
+      voices.find((v) => /female|samantha|victoria|zira|karen|serena|moira|tessa/i.test(v.name)) ??
+      voices.find((v) => v.lang.startsWith("en"));
+    if (female) u.voice = female;
+    u.pitch = 1.15;
+    u.rate = 0.95;
+    u.volume = clamp(this.settings.sfx);
+    synth.cancel();
+    synth.speak(u);
   }
 
   // ── one-shot effects ──────────────────────────────────────────────────────

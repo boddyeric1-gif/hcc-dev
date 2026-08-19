@@ -1,7 +1,6 @@
 import { Bar, Chip, HudButton, Panel } from "../ui";
 import { useGame } from "@/lib/hcc/store";
-import { evidencePct } from "@/lib/hcc/state";
-import { TARGETS } from "@/lib/hcc/targets";
+import { allTargets, evidencePct } from "@/lib/hcc/state";
 import { cn } from "@/lib/utils";
 
 export default function TargetsTab() {
@@ -9,7 +8,7 @@ export default function TargetsTab() {
 
   return (
     <div className="space-y-3">
-      {TARGETS.map((t) => {
+      {allTargets(state).map((t) => {
         const p = state.progress[t.id];
         const selected = state.selected === t.id;
         return (
@@ -22,6 +21,7 @@ export default function TargetsTab() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="font-display text-lg tracking-widest text-foreground">{t.codename}</h3>
+                    {t.id.startsWith("gen-") && !p?.seized && <Chip tone="amber">NEW</Chip>}
                     {p?.seized && <Chip tone="green">SEIZED</Chip>}
                   </div>
                   <p className="truncate text-[11px] text-muted-foreground">{t.allegation}</p>

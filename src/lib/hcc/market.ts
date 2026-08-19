@@ -1,4 +1,5 @@
 import { COINS, itemById } from "./catalog";
+import { newsImpact } from "./news";
 import type { Coin } from "./types";
 
 export type Regime = "CALM" | "TRENDING" | "SPIKE";
@@ -35,7 +36,8 @@ export const midPrice = (coin: Coin, at: number): number => {
     Math.sin(t * 0.61 + s * 1.7) * 0.12 +
     Math.sin(t * 1.9 + s * 0.9) * 0.05;
   const gain = regimeGain[regimeOf(coin, at)];
-  return Math.max(1, c.base * (1 + wave * c.vol * gain));
+  const news = newsImpact(coin, at);
+  return Math.max(1, c.base * (1 + wave * c.vol * gain * news.volMul) * news.priceMul);
 };
 
 /** Bid/ask spread widens with volatility, regime and thin books. */
@@ -44,7 +46,7 @@ export const spreadPct = (coin: Coin, at: number): number => {
   const base = 0.0018 + c.vol * 0.035;
   const gain = regimeGain[regimeOf(coin, at)];
   const jitter = 0.4 + hash01(Math.floor(at / (2 * MIN)) + seedOf(coin)) * 0.6;
-  return base * gain * jitter;
+  return Math.min(0.35, base * gain * jitter * newsImpact(coin, at).spreadMul);
 };
 
 export type Quote = {
@@ -111,6 +113,7 @@ export type ContractRead = {
   baseRate: number;
   rate: number;
   peak: boolean;
+  macroRateMul: number;
   overageMul: number;
   switchFee: number;
   demandPerKw: number;
@@ -128,14 +131,16 @@ export const contractRead = (id: string, at: number): ContractRead => {
   const baseRate = m?.pricePerKwh ?? 0.34;
   const peak = isPeak(at);
   const mul = peak ? (m?.peakMul ?? 1.6) : (m?.offPeakMul ?? 0.85);
+  const macro = newsImpact("ALL", at);
   return {
     id,
     name: it?.name ?? "Unmetered",
     capacityW: (m?.capacityKw ?? 7) * 1000,
     baseRate,
-    rate: baseRate * mul,
+    rate: baseRate * mul * macro.rateMul,
     peak,
-    overageMul: m?.overageMul ?? 3,
+    macroRateMul: macro.rateMul,
+    overageMul: (m?.overageMul ?? 3) * macro.overageMul,
     switchFee: m?.switchFee ?? 0,
     demandPerKw: m?.demandPerKw ?? 0,
   };

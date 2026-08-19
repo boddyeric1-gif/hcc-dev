@@ -3,14 +3,14 @@ import { useMemo } from "react";
 import EventStream from "../EventStream";
 import { Bar, Chip, HudButton, Panel, Stat } from "../ui";
 import { useGame, useStats } from "@/lib/hcc/store";
-import { evidencePct, nextRankIntel, rankName } from "@/lib/hcc/state";
-import { TARGETS, targetById } from "@/lib/hcc/targets";
+import { allTargets, evidencePct, findTarget, nextRankIntel, rankName } from "@/lib/hcc/state";
 
 export default function CommandTab() {
   const { state, dispatch } = useGame();
   const stats = useStats();
-  const active = targetById(state.selected);
-  const remaining = TARGETS.filter((t) => !state.progress[t.id]?.seized).length;
+  const active = findTarget(state, state.selected);
+  const roster = allTargets(state);
+  const remaining = roster.filter((t) => !state.progress[t.id]?.seized).length;
   const nextIntel = nextRankIntel(state.intel);
   const rankPct = useMemo(() => {
     if (nextIntel === null) return 100;
@@ -23,7 +23,7 @@ export default function CommandTab() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="RANK" value={rankName(state.intel)} hint={`${state.intel} intel`} tone="violet" />
           <Stat label="CREDITS" value={`${Math.round(state.credits).toLocaleString()} cr`} tone="green" />
-          <Stat label="TAKEDOWNS" value={`${state.takedowns}/${TARGETS.length}`} hint={`${remaining} active`} />
+          <Stat label="TAKEDOWNS" value={`${state.takedowns}/${roster.length}`} hint={`${remaining} active`} />
           <Stat
             label="TRACE HEAT"
             value={`${Math.round(state.heat)}%`}
