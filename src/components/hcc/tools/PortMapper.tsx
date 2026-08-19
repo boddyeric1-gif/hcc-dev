@@ -17,22 +17,28 @@ export default function PortMapper({
   seed: number;
   onDone: (success: boolean) => void;
 }) {
-  const ports = useMemo(
-    () => buildPorts(mulberry(seed), diff.grid, diff.liveServices),
-    [seed, diff.grid, diff.liveServices],
+  const map = useMemo(
+    () => buildPorts(mulberry(seed), diff.grid, diff.liveServices, diff.portMod),
+    [seed, diff.grid, diff.liveServices, diff.portMod],
   );
+  const ports = map.cells;
   const [opened, setOpened] = useState<number[]>([]);
   const [used, setUsed] = useState(0);
   const found = opened.filter((i) => ports[i]?.live).length;
+  const key = opened.map((i) => ports[i]).find((p) => p?.live)?.sig ?? null;
   const win = found >= diff.liveServices;
   const out = !win && used >= diff.probes;
 
   return (
     <Panel label="PORT MAPPER" className="p-3">
-      <p className="mb-3 text-xs text-muted-foreground">
-        Probe the perimeter of {target.host}. Find all {diff.liveServices} responding services before your
-        probe budget runs out. The map is regenerated every attempt.
+      <p className="mb-2 text-xs text-muted-foreground">
+        Probe the perimeter of {target.host}. Every responding service on this host shares one handshake
+        signature: <span className="text-hud-cyan">SIG = (sum of the port's digits) mod {map.mod}</span>. Probe
+        one port per signature class until a service answers, then take every port with that same signature.
       </p>
+      <div className="mb-3 rounded-md border border-hud-cyan/30 bg-hud-cyan/5 p-2 text-[10px] tracking-[0.16em] text-hud-cyan">
+        HOST KEY {key === null ? "UNKNOWN — probe to identify" : `SIG ${key}`} · SERVICES {diff.liveServices}
+      </div>
       <div className="mb-3 grid grid-cols-4 gap-2">
         {ports.map((p, i) => {
           const isOpen = opened.includes(i);
@@ -52,7 +58,10 @@ export default function PortMapper({
                 isOpen && !p.live && "border-border/40 bg-background/40 text-muted-foreground/40 line-through",
               )}
             >
-              {p.num}
+              <span className="block">{p.num}</span>
+              <span className="block text-[9px] opacity-70">
+                {isOpen ? `SIG ${p.sig}` : `Σ${digitSum(p.num)}`}
+              </span>
             </button>
           );
         })}
