@@ -57,6 +57,8 @@ export type OpDifficulty = {
   readonly grid: number;
   readonly liveServices: number;
   readonly probes: number;
+  /** signature modulus for the port handshake rule */
+  readonly portMod: number;
   readonly pretextRounds: number;
   readonly pretextAllowed: number;
   readonly cipherAttempts: number;
@@ -80,7 +82,10 @@ export const opDifficulty = (target: Target, skill: Skill): OpDifficulty => {
 
   const grid = hardness > 0.72 ? 16 : 12;
   const liveServices = 2 + Math.round(pressure * 3);
-  const probes = liveServices + Math.max(1, Math.round(2 + (1 - pressure) * 5));
+  const portMod = pressure > 0.6 ? 4 : 3;
+  // budget always covers the worst-case deduction: every signature class once,
+  // plus every live port, plus slack that upgrades and rank buy back.
+  const probes = liveServices + portMod + Math.max(1, Math.round(1 + (1 - pressure) * 4));
 
   const pretextRounds = 3 + (hardness > 0.6 ? 1 : 0) + (hardness > 0.85 ? 1 : 0);
   const pretextAllowed = clamp(Math.floor((1 - pressure) * 3), 0, 2);
@@ -99,6 +104,7 @@ export const opDifficulty = (target: Target, skill: Skill): OpDifficulty => {
     grid,
     liveServices,
     probes,
+    portMod,
     pretextRounds,
     pretextAllowed,
     cipherAttempts,
