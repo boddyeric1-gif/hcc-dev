@@ -70,6 +70,7 @@ export const initialState = (): GameState => ({
   quality: "balanced",
   brightness: 1.25,
   audio: { muted: false, music: 0.45, sfx: 0.7 },
+  guideSeen: false,
   log: [],
   nextLineId: 1,
 });
@@ -318,6 +319,7 @@ export type Action =
   | { type: "brightness"; value: number }
   | { type: "audio"; patch: Partial<AudioSettings> }
   | { type: "tab"; tab: TabId }
+  | { type: "guide-seen" }
   | { type: "select"; id: string }
   | { type: "engage"; id: string }
   | { type: "drop"; id: string }
@@ -382,6 +384,8 @@ export const reducer = (s: GameState, a: Action): GameState => {
       return { ...s, audio: { ...s.audio, ...a.patch } };
     case "tab":
       return { ...s, tab: a.tab };
+    case "guide-seen":
+      return { ...s, guideSeen: true };
     case "select":
       return { ...s, selected: a.id };
     case "engage": {
