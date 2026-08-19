@@ -39,7 +39,7 @@ function Room({ accent }: { accent: string }) {
       </mesh>
       <pointLight position={[-2.6, 2.4, -1.4]} intensity={13} distance={9} color={accent} />
       <pointLight position={[2.6, 2.4, -1.4]} intensity={9} distance={9} color="#4f86ff" />
-      <pointLight position={[0, 1.7, 1.4]} intensity={7} distance={7} color="#cfe6ff" />
+      <pointLight position={[0, 1.7, 1.4]} intensity={4} distance={6} color="#9fc6ff" />
     </group>
   );
 }
@@ -298,10 +298,10 @@ export default function RigScene({
       <Rack tier={v.storage} accent={v.accent} />
       <Poster tier={v.poster} accent={v.accent} />
       <spotLight
-        position={[0, 3.2, 1.4]}
-        angle={0.7}
-        penumbra={0.9}
-        intensity={26}
+        position={[0, 3.2, 1.2]}
+        angle={0.55}
+        penumbra={1}
+        intensity={12}
         color="#9fd8ff"
         castShadow={quality !== "performance"}
         shadow-mapSize={[1024, 1024]}
