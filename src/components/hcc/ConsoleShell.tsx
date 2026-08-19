@@ -4,6 +4,8 @@ import {
   FileSearch,
   Cpu,
   Crosshair,
+  BookOpen,
+  HelpCircle,
   ShoppingCart,
   Volume2,
   VolumeX,
@@ -13,6 +15,8 @@ import {
 
 import BootScreen from "./BootScreen";
 import CaseTab from "./tabs/CaseTab";
+import GuideTab from "./tabs/GuideTab";
+import Onboarding from "./Onboarding";
 import CommandTab from "./tabs/CommandTab";
 import MiningTab from "./tabs/MiningTab";
 import RigTab from "./tabs/RigTab";
@@ -33,6 +37,7 @@ const TABS: { id: TabId; label: string; icon: typeof Cpu }[] = [
   { id: "mining", label: "MINING", icon: Boxes },
   { id: "shop", label: "SHOP", icon: ShoppingCart },
   { id: "case", label: "CASE", icon: FileSearch },
+  { id: "guide", label: "GUIDE", icon: BookOpen },
 ];
 
 export default function ConsoleShell() {
@@ -96,6 +101,17 @@ export default function ConsoleShell() {
             >
               {state.audio.muted ? <VolumeX className="size-4" strokeWidth={1.6} /> : <Volume2 className="size-4" strokeWidth={1.6} />}
             </button>
+            <button
+              type="button"
+              aria-label="Open the field manual"
+              onClick={() => {
+                audio.sfx("tab");
+                dispatch({ type: "tab", tab: "guide" });
+              }}
+              className="text-muted-foreground transition-colors hover:text-hud-cyan"
+            >
+              <HelpCircle className="size-4" strokeWidth={1.6} />
+            </button>
             {state.operator && <span className="hidden text-hud-cyan sm:inline">{state.operator}</span>}
             <span className="text-hud-violet">{rankName(state.intel)}</span>
             <span className="text-hud-green">{Math.round(state.credits).toLocaleString()} cr</span>
@@ -114,6 +130,7 @@ export default function ConsoleShell() {
         {state.tab === "mining" && <MiningTab />}
         {state.tab === "shop" && <ShopTab />}
         {state.tab === "case" && <CaseTab />}
+        {state.tab === "guide" && <GuideTab />}
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-hud-cyan/20 bg-background/92 backdrop-blur-md">
@@ -143,6 +160,8 @@ export default function ConsoleShell() {
           })}
         </div>
       </nav>
+
+      {!state.guideSeen && <Onboarding />}
     </div>
   );
 }
