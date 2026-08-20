@@ -329,6 +329,7 @@ export type Action =
   | { type: "report"; targetId: string }
   | { type: "buy"; id: string }
   | { type: "install"; id: string }
+  | { type: "grant-credits"; amount: number; reason: string }
   | { type: "scrub" }
   | { type: "mining-coin"; coin: Coin }
   | { type: "mining-unit"; id: string; delta: number }
@@ -519,6 +520,14 @@ export const reducer = (s: GameState, a: Action): GameState => {
         next = { ...next, mining: { ...next.mining, contract: a.id } };
       }
       return pushLog(next, `Acquired ${it.name} for ${it.price.toLocaleString()} cr.`, "ok");
+    }
+    case "grant-credits": {
+      if (!(a.amount > 0)) return s;
+      return pushLog(
+        { ...s, credits: s.credits + a.amount },
+        `${a.reason} — +${Math.round(a.amount).toLocaleString()} cr credited.`,
+        "ok",
+      );
     }
     case "install": {
       const it = itemById(a.id);
