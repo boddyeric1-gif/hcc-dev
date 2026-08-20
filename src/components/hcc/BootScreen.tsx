@@ -88,7 +88,10 @@ export default function BootScreen({ onDone }: { onDone: (handle: string) => voi
     <div className="hud-grid relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-6">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-hud-cyan/10 blur-2xl animate-sweep" />
       <div className="w-full max-w-lg">
-        <h1 className="font-display text-5xl tracking-[0.3em] text-hud-cyan text-glow animate-flicker">H.C.C</h1>
+        <h1 className="font-display text-5xl tracking-[0.3em] text-hud-cyan text-glow animate-flicker">
+          H.C.C
+          <span className="sr-only"> — Hunting Cyber Criminals</span>
+        </h1>
         <p className="mt-1 mb-6 text-[10px] tracking-[0.42em] text-muted-foreground">HUNTING CYBER CRIMINALS</p>
 
         <div className="panel min-h-[220px] p-4 font-mono text-[11px] leading-relaxed">
