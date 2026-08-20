@@ -23,7 +23,7 @@ export const Route = createFileRoute("/api/public/telegram/register")({
         await callBotApi(botToken, "setWebhook", {
           url: webhookUrl,
           secret_token: deriveWebhookSecret(botToken),
-          allowed_updates: ["message"],
+          allowed_updates: ["message", "pre_checkout_query"],
         });
         await callBotApi(botToken, "setMyCommands", {
           commands: COMMANDS.map((c) => ({ command: c.command, description: c.description })),

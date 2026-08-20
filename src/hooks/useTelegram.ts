@@ -21,6 +21,7 @@ export interface TelegramWebApp {
   expand: () => void;
   openInvoice: (url: string, callback?: (status: string) => void) => void;
   MainButton: TelegramMainButton;
+  initData?: string;
   initDataUnsafe?: { user?: TelegramUser; start_param?: string };
 }
 
@@ -61,6 +62,7 @@ export function useTelegram() {
   return {
     webApp,
     isTelegram: webApp !== null,
+    initData: webApp?.initData ?? "",
     user: webApp?.initDataUnsafe?.user ?? null,
     MainButton: webApp?.MainButton ?? null,
   };
