@@ -57,8 +57,8 @@ export type OpDifficulty = {
   readonly grid: number;
   readonly liveServices: number;
   readonly probes: number;
-  /** signature modulus for the port handshake rule */
-  readonly portMod: number;
+  /** signal floor: ports at or above this value are live */
+  readonly portFloor: number;
   readonly pretextRounds: number;
   readonly pretextAllowed: number;
   readonly cipherAttempts: number;
@@ -82,10 +82,10 @@ export const opDifficulty = (target: Target, skill: Skill): OpDifficulty => {
 
   const grid = hardness > 0.72 ? 16 : 12;
   const liveServices = 2 + Math.round(pressure * 3);
-  const portMod = pressure > 0.6 ? 4 : 3;
-  // budget always covers the worst-case deduction: every signature class once,
-  // plus every live port, plus slack that upgrades and rank buy back.
-  const probes = liveServices + portMod + Math.max(1, Math.round(1 + (1 - pressure) * 4));
+  const portFloor = 60;
+  // the rule is readable off the tiles, so the budget only needs the live
+  // ports plus generous slack for misclicks.
+  const probes = liveServices + Math.max(3, Math.round(3 + (1 - pressure) * 4));
 
   const pretextRounds = 3 + (hardness > 0.6 ? 1 : 0) + (hardness > 0.85 ? 1 : 0);
   const pretextAllowed = clamp(Math.floor((1 - pressure) * 3), 0, 2);
@@ -104,7 +104,7 @@ export const opDifficulty = (target: Target, skill: Skill): OpDifficulty => {
     grid,
     liveServices,
     probes,
-    portMod,
+    portFloor,
     pretextRounds,
     pretextAllowed,
     cipherAttempts,
@@ -117,14 +117,12 @@ export const opDifficulty = (target: Target, skill: Skill): OpDifficulty => {
 };
 
 // ── port mapper ───────────────────────────────────────────────────────────
-export type PortCell = { readonly num: number; readonly live: boolean; readonly sig: number };
+export type PortCell = { readonly num: number; readonly live: boolean; readonly signal: number };
 
 export type PortMap = {
   readonly cells: readonly PortCell[];
-  /** signature modulus: sig = digit sum of the port, mod this */
-  readonly mod: number;
-  /** the signature every responding service shares */
-  readonly remainder: number;
+  /** ports with signal >= floor are live */
+  readonly floor: number;
 };
 
 export const digitSum = (n: number): number =>
@@ -132,30 +130,26 @@ export const digitSum = (n: number): number =>
     .split("")
     .reduce((a, d) => a + Number(d), 0);
 
-export const portSig = (n: number, mod: number): number => digitSum(n) % mod;
-
 /**
- * Deterministic handshake rule: a port responds only when its digit-sum
- * signature equals the host's key remainder. One probe of each signature class
- * identifies the key, after which every live port is deducible.
+ * Simplest possible rule: every tile prints its signal strength. A port is
+ * live when its signal is at or above the published floor. No deduction
+ * chain, no hidden key — just read the number.
  */
-export const buildPorts = (r: Rng, grid: number, live: number, mod: number): PortMap => {
-  const remainder = Math.floor(r() * mod);
-  const hits = new Set<number>();
-  const misses = new Set<number>();
+export const buildPorts = (r: Rng, grid: number, live: number, floor: number): PortMap => {
+  const nums = new Set<number>();
   let guard = 0;
-  while ((hits.size < live || misses.size < grid - live) && guard++ < 20000) {
-    const n = 1024 + Math.floor(r() * 64000);
-    const s = portSig(n, mod);
-    if (s === remainder) {
-      if (hits.size < live) hits.add(n);
-    } else if (misses.size < grid - live) misses.add(n);
-  }
+  while (nums.size < grid && guard++ < 20000) nums.add(1024 + Math.floor(r() * 64000));
   const cells = shuffle(
-    [...hits, ...misses].map((num) => ({ num, live: portSig(num, mod) === remainder, sig: portSig(num, mod) })),
+    [...nums].map((num, i) => {
+      const isLive = i < live;
+      const signal = isLive
+        ? floor + Math.floor(r() * (99 - floor))
+        : Math.max(4, floor - 6 - Math.floor(r() * (floor - 10)));
+      return { num, live: isLive, signal };
+    }),
     r,
   );
-  return { cells, mod, remainder };
+  return { cells, floor };
 };
 
 // ── social engineering ────────────────────────────────────────────────────

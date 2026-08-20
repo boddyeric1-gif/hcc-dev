@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
 import { HudButton, Panel } from "../ui";
-import { buildPorts, digitSum, mulberry } from "@/lib/hcc/puzzles";
+import { buildPorts, mulberry } from "@/lib/hcc/puzzles";
 import type { OpDifficulty } from "@/lib/hcc/puzzles";
 import { cn } from "@/lib/utils";
 import type { Target } from "@/lib/hcc/types";
@@ -18,26 +18,25 @@ export default function PortMapper({
   onDone: (success: boolean) => void;
 }) {
   const map = useMemo(
-    () => buildPorts(mulberry(seed), diff.grid, diff.liveServices, diff.portMod),
-    [seed, diff.grid, diff.liveServices, diff.portMod],
+    () => buildPorts(mulberry(seed), diff.grid, diff.liveServices, diff.portFloor),
+    [seed, diff.grid, diff.liveServices, diff.portFloor],
   );
   const ports = map.cells;
   const [opened, setOpened] = useState<number[]>([]);
   const [used, setUsed] = useState(0);
   const found = opened.filter((i) => ports[i]?.live).length;
-  const key = opened.map((i) => ports[i]).find((p) => p?.live)?.sig ?? null;
   const win = found >= diff.liveServices;
   const out = !win && used >= diff.probes;
 
   return (
     <Panel label="PORT MAPPER" className="p-3">
       <p className="mb-2 text-xs text-muted-foreground">
-        Probe the perimeter of {target.host}. Every responding service on this host shares one handshake
-        signature: <span className="text-hud-cyan">SIG = (sum of the port's digits) mod {map.mod}</span>. Probe
-        one port per signature class until a service answers, then take every port with that same signature.
+        Probe the perimeter of {target.host}. Each port prints its signal strength. A port is live when its
+        signal is <span className="text-hud-cyan">{map.floor} or higher</span> — that's the whole rule. Tap the
+        strong ones, skip the weak ones.
       </p>
       <div className="mb-3 rounded-md border border-hud-cyan/30 bg-hud-cyan/5 p-2 text-[10px] tracking-[0.16em] text-hud-cyan">
-        HOST KEY {key === null ? "UNKNOWN — probe to identify" : `SIG ${key}`} · SERVICES {diff.liveServices}
+        SIGNAL FLOOR {map.floor} · SERVICES {diff.liveServices}
       </div>
       <div className="mb-3 grid grid-cols-4 gap-2">
         {ports.map((p, i) => {
@@ -60,7 +59,7 @@ export default function PortMapper({
             >
               <span className="block">{p.num}</span>
               <span className="block text-[9px] opacity-70">
-                {isOpen ? `SIG ${p.sig}` : `Σ${digitSum(p.num)}`}
+                {p.signal}%
               </span>
             </button>
           );
