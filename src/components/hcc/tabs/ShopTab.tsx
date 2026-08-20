@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Star } from "lucide-react";
 
 import { Chip, HudButton, Panel, Stat } from "../ui";
+import StarTestPurchase from "../StarTestPurchase";
 import { audio } from "@/lib/hcc/audio";
 import { useGame } from "@/lib/hcc/store";
 import { itemById } from "@/lib/hcc/catalog";
@@ -57,6 +58,8 @@ export default function ShopTab() {
           ))}
         </div>
       </Panel>
+
+      <StarTestPurchase />
 
       <div className="grid gap-3 sm:grid-cols-2">
         {items.map((it) => {
