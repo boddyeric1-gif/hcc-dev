@@ -80,6 +80,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "H.C.C — Hunting Cyber Criminals" },
       { name: "description", content: "A terminal hacking sim about taking down dark web servers." },
       { name: "author", content: "Lovable" },
+      {
+        name: "google-site-verification",
+        content: "kcIc-7hM_-aXg903__-uugLcreF73hnaupGkeivYyyM",
+      },
       { property: "og:title", content: "H.C.C — Hunting Cyber Criminals" },
       { property: "og:description", content: "A terminal hacking sim about taking down dark web servers." },
       { property: "og:type", content: "website" },
