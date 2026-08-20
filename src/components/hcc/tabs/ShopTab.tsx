@@ -65,11 +65,17 @@ export default function ShopTab() {
           const afford = state.credits >= it.price;
           const count = state.mining.units[it.id] ?? 0;
           const installed = it.slot ? state.installed[it.slot] === it.id : false;
+          const premium = it.tier >= 4;
           return (
             <Panel key={it.id} className={cn("p-3", locked && "opacity-55")}>
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="text-sm text-foreground">{it.name}</h3>
-                <Chip tone={it.tier >= 4 ? "red" : it.tier === 3 ? "amber" : it.tier === 2 ? "cyan" : "dim"}>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                <h3 className="flex min-w-0 items-center gap-1.5 text-sm text-foreground">
+                  {premium && (
+                    <Star className="size-3.5 shrink-0 text-hud-amber" strokeWidth={1.8} aria-label="Telegram Stars item" />
+                  )}
+                  <span className="truncate">{it.name}</span>
+                </h3>
+                <Chip tone={premium ? "red" : it.tier === 3 ? "amber" : it.tier === 2 ? "cyan" : "dim"}>
                   T{it.tier}
                 </Chip>
               </div>
@@ -86,11 +92,11 @@ export default function ShopTab() {
                   {it.mining.capacityKw} kW · {it.mining.pricePerKwh} cr/kWh
                 </p>
               )}
-              <div className="mt-3 flex items-center justify-between gap-2">
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs tabular-nums text-hud-amber">
                   {it.price === 0 ? "OWNED" : `${it.price.toLocaleString()} cr`}
                 </span>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-2">
                   {count > 0 && <Chip tone="cyan">×{count}</Chip>}
                   {installed && <Chip tone="green">FITTED</Chip>}
                   <HudButton
@@ -110,6 +116,14 @@ export default function ShopTab() {
                           ? "Buy unit"
                           : "Acquire"}
                   </HudButton>
+                  {premium && isTelegram && !locked && (owned ? it.stackable : true) && (
+                    <HudButton size="sm" tone="amber" onClick={() => handleStarPurchase(it.id)}>
+                      <span className="inline-flex items-center gap-1">
+                        <Star className="size-3" strokeWidth={2} />
+                        Stars
+                      </span>
+                    </HudButton>
+                  )}
                 </div>
               </div>
               {owned && it.slot && !installed && (
