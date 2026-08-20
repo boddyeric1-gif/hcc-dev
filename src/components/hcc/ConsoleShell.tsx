@@ -40,9 +40,28 @@ const TABS: { id: TabId; label: string; icon: typeof Cpu }[] = [
   { id: "guide", label: "GUIDE", icon: BookOpen },
 ];
 
+const TAB_IDS = new Set<TabId>(TABS.map((t) => t.id));
+
+/** Telegram deep links (/shop, ?startapp=shop) ask the console to open a section. */
+function requestedTab(): TabId | null {
+  if (typeof window === "undefined") return null;
+  const fromQuery = new URLSearchParams(window.location.search).get("tab");
+  const fromTelegram = window.Telegram?.WebApp?.initDataUnsafe?.start_param ?? null;
+  const candidate = (fromQuery ?? fromTelegram) as TabId | null;
+  return candidate && TAB_IDS.has(candidate) ? candidate : null;
+}
+
 export default function ConsoleShell() {
   const { state, dispatch } = useGame();
   const online = state.phase === "online";
+
+  // honour a deep-linked section once the console is up
+  useEffect(() => {
+    if (!online) return;
+    const tab = requestedTab();
+    if (tab) dispatch({ type: "tab", tab });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [online]);
 
   // keep the synth engine in sync with saved preferences
   useEffect(() => {
