@@ -147,7 +147,7 @@ export default function ConsoleShell() {
                   dispatch({ type: "tab", tab: t.id });
                 }}
                 className={cn(
-                  "flex min-w-[58px] flex-1 flex-col items-center gap-1 rounded-md border px-2 py-1.5 transition-colors",
+                  "flex min-w-[52px] flex-1 shrink-0 flex-col items-center gap-0.5 rounded-md border px-2 py-1 transition-colors",
                   active
                     ? "border-hud-cyan/50 bg-hud-cyan/10 text-hud-cyan"
                     : "border-transparent text-muted-foreground hover:text-foreground",
