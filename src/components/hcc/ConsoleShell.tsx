@@ -80,8 +80,8 @@ export default function ConsoleShell() {
       <div className="pointer-events-none fixed inset-0 hud-grid opacity-40" aria-hidden />
       <div className="pointer-events-none fixed inset-x-0 top-0 h-32 bg-hud-cyan/5 blur-3xl" aria-hidden />
 
-      <header className="sticky top-0 z-20 border-b border-hud-cyan/20 bg-background/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-2.5">
+      <header className="safe-top sticky top-0 z-20 border-b border-hud-cyan/20 bg-background/85 backdrop-blur-md">
+        <div className="safe-x mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2">
           <div className="flex items-baseline gap-2">
             <span className="font-display text-lg tracking-[0.3em] text-hud-cyan text-glow">H.C.C</span>
             <span className="hidden text-[9px] tracking-[0.3em] text-muted-foreground sm:inline">
@@ -122,7 +122,7 @@ export default function ConsoleShell() {
         </div>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-3xl flex-1 px-3 pt-3 pb-24">
+      <main className="pb-console safe-x relative z-10 mx-auto w-full max-w-3xl flex-1 px-3 pt-3">
         {state.tab === "command" && <CommandTab />}
         {state.tab === "targets" && <TargetsTab />}
         {state.tab === "tools" && <ToolsTab />}
@@ -133,8 +133,8 @@ export default function ConsoleShell() {
         {state.tab === "guide" && <GuideTab />}
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-hud-cyan/20 bg-background/92 backdrop-blur-md">
-        <div className="no-scrollbar mx-auto flex max-w-3xl gap-1 overflow-x-auto px-2 py-2">
+      <nav className="safe-bottom fixed inset-x-0 bottom-0 z-20 border-t border-hud-cyan/20 bg-background/92 backdrop-blur-md">
+        <div className="no-scrollbar safe-x mx-auto flex max-w-3xl gap-1 overflow-x-auto px-2 py-1.5">
           {TABS.map((t) => {
             const Icon = t.icon;
             const active = state.tab === t.id;
