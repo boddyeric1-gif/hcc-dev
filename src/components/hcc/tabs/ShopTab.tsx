@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Star } from "lucide-react";
 
 import { Chip, HudButton, Panel, Stat } from "../ui";
 import { audio } from "@/lib/hcc/audio";
@@ -6,6 +7,7 @@ import { useGame } from "@/lib/hcc/store";
 import { itemById } from "@/lib/hcc/catalog";
 import { rankIndex, shopItems } from "@/lib/hcc/state";
 import type { ItemCategory } from "@/lib/hcc/types";
+import { getTelegramWebApp, useTelegram } from "@/hooks/useTelegram";
 import { cn } from "@/lib/utils";
 
 const CATS: { id: ItemCategory; label: string }[] = [
@@ -19,8 +21,18 @@ const CATS: { id: ItemCategory; label: string }[] = [
 export default function ShopTab() {
   const { state, dispatch } = useGame();
   const [cat, setCat] = useState<ItemCategory>("hardware");
+  const { isTelegram } = useTelegram();
   const rank = rankIndex(state.intel);
   const items = shopItems(cat);
+
+  const handleStarPurchase = (id: string) => {
+    const app = getTelegramWebApp();
+    if (!app) return;
+    const url = `https://t.me/invoice/hcc-${id}`;
+    app.openInvoice(url, (status) => {
+      if (status === "paid") dispatch({ type: "buy", id });
+    });
+  };
 
   return (
     <div className="space-y-3">
