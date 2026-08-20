@@ -144,8 +144,7 @@ export const buildPorts = (r: Rng, grid: number, live: number, floor: number): P
       const isLive = i < live;
       const signal = isLive
         ? floor + Math.floor(r() * (99 - floor))
-        : Math.max(4, floor - 6 - Math.floor(r() * (floor - 10))),
-      ;
+        : Math.max(4, floor - 6 - Math.floor(r() * (floor - 10)));
       return { num, live: isLive, signal };
     }),
     r,
