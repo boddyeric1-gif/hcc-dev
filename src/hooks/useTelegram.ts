@@ -21,7 +21,7 @@ export interface TelegramWebApp {
   expand: () => void;
   openInvoice: (url: string, callback?: (status: string) => void) => void;
   MainButton: TelegramMainButton;
-  initDataUnsafe?: { user?: TelegramUser };
+  initDataUnsafe?: { user?: TelegramUser; start_param?: string };
 }
 
 declare global {
