@@ -17,7 +17,7 @@ export function Panel({
     <section className={cn("panel relative overflow-hidden", className)}>
       {label && (
         <header className="flex items-center justify-between border-b border-border/60 px-3 py-2">
-          <span className="text-[10px] tracking-[0.22em] text-hud-cyan/80">{label}</span>
+          <h2 className="text-[10px] tracking-[0.22em] text-hud-cyan/80">{label}</h2>
           {right}
         </header>
       )}

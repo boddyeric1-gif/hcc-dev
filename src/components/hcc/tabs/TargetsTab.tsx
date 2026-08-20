@@ -31,7 +31,7 @@ export default function TargetsTab() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-display text-lg tracking-widest text-foreground">{t.codename}</h3>
+                    <h2 className="font-display text-lg tracking-widest text-foreground">{t.codename}</h2>
                     {t.id.startsWith("gen-") && !p?.seized && <Chip tone="amber">NEW</Chip>}
                     {engaged && !p?.seized && <Chip tone="cyan">ENGAGED</Chip>}
                     {p?.seized && <Chip tone="green">SEIZED</Chip>}

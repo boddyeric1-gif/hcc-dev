@@ -83,8 +83,11 @@ export default function ConsoleShell() {
       <header className="safe-top sticky top-0 z-20 border-b border-hud-cyan/20 bg-background/85 backdrop-blur-md">
         <div className="safe-x mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2">
           <div className="flex items-baseline gap-2">
-            <span className="font-display text-lg tracking-[0.3em] text-hud-cyan text-glow">H.C.C</span>
-            <span className="hidden text-[9px] tracking-[0.3em] text-muted-foreground sm:inline">
+            <h1 className="font-display text-lg tracking-[0.3em] text-hud-cyan text-glow">
+              H.C.C
+              <span className="sr-only"> — Hunting Cyber Criminals</span>
+            </h1>
+            <span aria-hidden className="hidden text-[9px] tracking-[0.3em] text-muted-foreground sm:inline">
               HUNTING CYBER CRIMINALS
             </span>
           </div>
