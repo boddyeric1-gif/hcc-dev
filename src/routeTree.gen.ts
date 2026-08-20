@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as ApiTelegramReregisterRouteImport } from './routes/api/telegram/reregister'
 import { Route as ApiPublicTelegramRegisterRouteImport } from './routes/api/public/telegram/register'
 import { Route as ApiPublicTelegramWebhookRouteImport } from './routes/api/public/telegram/webhook'
 
@@ -29,11 +28,6 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiTelegramReregisterRoute = ApiTelegramReregisterRouteImport.update({
-  id: '/api/telegram/reregister',
-  path: '/api/telegram/reregister',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicTelegramRegisterRoute =
@@ -53,7 +47,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/privacy': typeof PrivacyRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/api/telegram/reregister': typeof ApiTelegramReregisterRoute
   '/api/public/telegram/register': typeof ApiPublicTelegramRegisterRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
@@ -61,7 +54,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/privacy': typeof PrivacyRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/api/telegram/reregister': typeof ApiTelegramReregisterRoute
   '/api/public/telegram/register': typeof ApiPublicTelegramRegisterRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
@@ -70,7 +62,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/privacy': typeof PrivacyRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/api/telegram/reregister': typeof ApiTelegramReregisterRoute
   '/api/public/telegram/register': typeof ApiPublicTelegramRegisterRoute
   '/api/public/telegram/webhook': typeof ApiPublicTelegramWebhookRoute
 }
@@ -80,7 +71,6 @@ export interface FileRouteTypes {
     | '/'
     | '/privacy'
     | '/sitemap.xml'
-    | '/api/telegram/reregister'
     | '/api/public/telegram/register'
     | '/api/public/telegram/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -88,7 +78,6 @@ export interface FileRouteTypes {
     | '/'
     | '/privacy'
     | '/sitemap.xml'
-    | '/api/telegram/reregister'
     | '/api/public/telegram/register'
     | '/api/public/telegram/webhook'
   id:
@@ -96,7 +85,6 @@ export interface FileRouteTypes {
     | '/'
     | '/privacy'
     | '/sitemap.xml'
-    | '/api/telegram/reregister'
     | '/api/public/telegram/register'
     | '/api/public/telegram/webhook'
   fileRoutesById: FileRoutesById
@@ -105,7 +93,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PrivacyRoute: typeof PrivacyRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
-  ApiTelegramReregisterRoute: typeof ApiTelegramReregisterRoute
   ApiPublicTelegramRegisterRoute: typeof ApiPublicTelegramRegisterRoute
   ApiPublicTelegramWebhookRoute: typeof ApiPublicTelegramWebhookRoute
 }
@@ -133,13 +120,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/telegram/reregister': {
-      id: '/api/telegram/reregister'
-      path: '/api/telegram/reregister'
-      fullPath: '/api/telegram/reregister'
-      preLoaderRoute: typeof ApiTelegramReregisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/telegram/register': {
       id: '/api/public/telegram/register'
       path: '/api/public/telegram/register'
@@ -161,7 +141,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PrivacyRoute: PrivacyRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
-  ApiTelegramReregisterRoute: ApiTelegramReregisterRoute,
   ApiPublicTelegramRegisterRoute: ApiPublicTelegramRegisterRoute,
   ApiPublicTelegramWebhookRoute: ApiPublicTelegramWebhookRoute,
 }
