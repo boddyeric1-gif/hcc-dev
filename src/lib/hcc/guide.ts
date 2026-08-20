@@ -78,8 +78,8 @@ export const GUIDE: readonly GuideChapter[] = [
     tab: "tools",
     steps: [
       {
-        title: "PORT MAPPER — find the open port",
-        body: "Solvable by arithmetic, not luck. Every tile shows Σ, the sum of the port's digits. The host publishes a modulus M (3 or 4). A port's signature is SIG = Σ mod M, and every responding service on that host shares the same SIG. Probe one port from each signature class (at most M probes) until one answers — that reveals the host key — then take every remaining port whose Σ mod M equals that key.",
+        title: "PORT MAPPER — find the open ports",
+        body: "The easiest of the four. Each tile prints a port number and its signal strength. The host publishes a signal floor at the top of the panel: any port at or above that number is a live service, anything below it is dead air. Tap the strong ones until you have found every service. No maths, no hidden key.",
       },
       {
         title: "PRETEXT — social engineering",
@@ -101,8 +101,8 @@ export const GUIDE: readonly GuideChapter[] = [
     rules: [
       "Success files one piece of evidence. Failure files nothing and raises heat.",
       "A better rig and a higher rank buy back probes, attempts and time — that is how progress feels.",
-      "Port Mapper worked example: M = 3, port 8214 → Σ = 8+2+1+4 = 15 → SIG 0. If a live port has SIG 0, every other SIG 0 port is live too.",
-      "Your probe budget always covers the worst case: one probe per signature class plus one per live service, plus slack from your rig and rank.",
+      "Port Mapper worked example: floor 60 — a port reading 74% is live, a port reading 31% is not.",
+      "Your probe budget always covers every live service plus slack for a few misreads; a better rig and rank add more slack.",
     ],
   },
   {
