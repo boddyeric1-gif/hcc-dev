@@ -76,7 +76,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "H.C.C — Hunting Cyber Criminals" },
       { name: "description", content: "A terminal hacking sim about taking down dark web servers." },
       { name: "author", content: "Lovable" },
