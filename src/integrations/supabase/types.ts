@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      star_purchases: {
+        Row: {
+          claimed_at: string | null
+          created_at: string
+          credits: number
+          id: string
+          product_id: string
+          provider_payment_charge_id: string | null
+          stars: number
+          telegram_payment_charge_id: string
+          telegram_user_id: number
+        }
+        Insert: {
+          claimed_at?: string | null
+          created_at?: string
+          credits: number
+          id?: string
+          product_id: string
+          provider_payment_charge_id?: string | null
+          stars: number
+          telegram_payment_charge_id: string
+          telegram_user_id: number
+        }
+        Update: {
+          claimed_at?: string | null
+          created_at?: string
+          credits?: number
+          id?: string
+          product_id?: string
+          provider_payment_charge_id?: string | null
+          stars?: number
+          telegram_payment_charge_id?: string
+          telegram_user_id?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
