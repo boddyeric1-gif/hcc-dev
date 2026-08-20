@@ -70,7 +70,7 @@ describe("stars webhook", () => {
       },
     });
     expect(recordStarPayment).toHaveBeenCalledWith(
-      expect.objectContaining({ chargeId: "charge_1", telegramUserId: 7, credits: undefined ?? undefined }),
+      expect.objectContaining({ chargeId: "charge_1", telegramUserId: 7, productId: STAR_TEST_PRODUCT.id }),
     );
   });
 
