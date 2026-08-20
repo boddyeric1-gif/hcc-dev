@@ -6,11 +6,11 @@ export const Route = createFileRoute("/api/telegram/reregister")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const { url } = (await request.json()) as { url?: string };
         const botToken = process.env["TELEGRAM_BOT_TOKEN"];
         if (!botToken) return new Response("Not configured", { status: 503 });
-        const origin = new URL(request.url).origin;
         const result = await callBotApi(botToken, "setWebhook", {
-          url: `${origin}/api/public/telegram/webhook`,
+          url: `${url}/api/public/telegram/webhook`,
           secret_token: deriveWebhookSecret(botToken),
           allowed_updates: ["message", "pre_checkout_query"],
         });
