@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeAll } from "vitest";
-process.env.TELEGRAM_BOT_TOKEN = "123:TESTTOKEN";
+process.env["TELEGRAM_BOT_TOKEN"] = "123:TESTTOKEN";
 import { Route } from "@/routes/api/public/telegram/webhook";
 import { deriveWebhookSecret } from "@/lib/telegram/bot.server";
 
