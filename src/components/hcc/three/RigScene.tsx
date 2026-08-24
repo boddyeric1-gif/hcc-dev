@@ -203,19 +203,38 @@ function Chair({ tier }: { tier: number }) {
   );
 }
 
-function Rack({ tier, accent }: { tier: number; accent: string }) {
+/**
+ * Storage/infrastructure cabinets. Higher tiers add real cabinets rather than
+ * just more glow, so a T4/T5 workspace reads as a small server room.
+ */
+function Rack({ tier, accent, theme }: { tier: number; accent: string; theme: RigTheme }) {
   if (tier < 2) return null;
+  const cabinets = Math.min(3, tier - 1);
   return (
     <group position={[-1.75, 0, -1.3]}>
-      <RoundedBox args={[0.55, 1.1, 0.5]} radius={0.02} smoothness={4} position={[0, 0.55, 0]} castShadow>
-        <meshStandardMaterial color="#0b0f14" roughness={0.35} metalness={0.9} />
-      </RoundedBox>
-      {[0.2, 0.42, 0.64, 0.86].slice(0, tier + 1).map((y) => (
-        <mesh key={y} position={[0, y, 0.255]}>
-          <planeGeometry args={[0.46, 0.06]} />
-          <meshStandardMaterial color="#05080b" emissive={accent} emissiveIntensity={1.8} toneMapped={false} />
-        </mesh>
-      ))}
+      {Array.from({ length: cabinets }, (_, c) => {
+        const tall = tier >= 4 && c === 0;
+        const h = tall ? 1.85 : 1.1;
+        return (
+          <group key={c} position={[-c * 0.62, 0, c * 0.18]}>
+            <RoundedBox args={[0.55, h, 0.5]} radius={0.02} smoothness={4} position={[0, h / 2, 0]} castShadow>
+              <meshStandardMaterial color={theme.chassis} roughness={0.32} metalness={0.9} />
+            </RoundedBox>
+            {Array.from({ length: tall ? 7 : 4 }, (_, i) => 0.2 + i * 0.24).map((y) => (
+              <mesh key={y} position={[0, y, 0.255]}>
+                <planeGeometry args={[0.46, 0.05]} />
+                <meshStandardMaterial color="#05080b" emissive={accent} emissiveIntensity={1.8} toneMapped={false} />
+              </mesh>
+            ))}
+            {tier >= 5 && (
+              <mesh position={[0, h + 0.06, 0]}>
+                <boxGeometry args={[0.5, 0.03, 0.46]} />
+                <meshStandardMaterial color="#000" emissive={theme.glow} emissiveIntensity={3.4} toneMapped={false} />
+              </mesh>
+            )}
+          </group>
+        );
+      })}
     </group>
   );
 }
