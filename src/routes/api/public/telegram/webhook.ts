@@ -95,6 +95,11 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           return Response.json({ ok: true });
         }
 
+        if (spec.replyOnly) {
+          await callBotApi(botToken, "sendMessage", { chat_id: chatId, text: spec.text });
+          return Response.json({ ok: true });
+        }
+
         // web_app buttons are only valid in private chats; groups get a plain link.
         const url = miniAppUrl(miniAppBaseUrl(), spec.tab);
         const isPrivate = message?.chat?.type === "private";

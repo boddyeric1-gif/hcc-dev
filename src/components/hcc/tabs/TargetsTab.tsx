@@ -1,3 +1,4 @@
+import ChannelBoard from "../ChannelBoard";
 import { Bar, Chip, HudButton, Panel } from "../ui";
 import { useGame, useStats } from "@/lib/hcc/store";
 import { allTargets, evidencePct, rankIndex } from "@/lib/hcc/state";
@@ -11,12 +12,7 @@ export default function TargetsTab() {
 
   return (
     <div className="space-y-3">
-      <Panel label="CHANNELS" className="p-3">
-        <p className="text-[11px] text-muted-foreground">
-          {state.active.length}/{slots} cases engaged at once. Engaging past your limit lets the oldest case
-          go cold and loses its evidence — buy parallel-op tooling in the SHOP to widen the desk.
-        </p>
-      </Panel>
+      <ChannelBoard />
       {allTargets(state).map((t) => {
         const p = state.progress[t.id];
         const selected = state.selected === t.id;

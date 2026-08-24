@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import EventStream from "../EventStream";
+import PrestigePanel from "../PrestigePanel";
 import { Bar, Chip, HudButton, Panel, Stat } from "../ui";
 import { useGame, useStats } from "@/lib/hcc/store";
 import { allTargets, evidencePct, findTarget, nextRankIntel, rankName } from "@/lib/hcc/state";
@@ -21,7 +22,12 @@ export default function CommandTab() {
     <div className="space-y-3">
       <Panel label="OPERATOR" className="p-3">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="RANK" value={rankName(state.intel)} hint={`${state.intel} intel`} tone="violet" />
+          <Stat
+            label="RANK"
+            value={rankName(state.intel)}
+            hint={state.prestige > 0 ? `${state.intel} intel · P${state.prestige}` : `${state.intel} intel`}
+            tone="violet"
+          />
           <Stat label="CREDITS" value={`${Math.round(state.credits).toLocaleString()} cr`} tone="green" />
           <Stat label="TAKEDOWNS" value={`${state.takedowns}/${roster.length}`} hint={`${remaining} active`} />
           <Stat
@@ -43,6 +49,8 @@ export default function CommandTab() {
           </HudButton>
         </div>
       </Panel>
+
+      <PrestigePanel />
 
       {active && (
         <Panel label="ACTIVE CASE" className="p-3">

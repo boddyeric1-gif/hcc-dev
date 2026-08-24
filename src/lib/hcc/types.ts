@@ -68,6 +68,10 @@ export type RigStats = {
   readonly coolingWatts: number;
   /** how many cases can stay warm at once */
   readonly opSlots: number;
+  /** multiplier on heat gained from a failed operation (lower is better) */
+  readonly failHeatMul: number;
+  /** multiplier on mining hardware heat output (lower is better) */
+  readonly miningHeatMul: number;
 };
 
 export type MiningSpec = {
@@ -95,7 +99,7 @@ export type Item = {
   readonly name: string;
   readonly category: ItemCategory;
   readonly slot?: Slot;
-  readonly tier: 1 | 2 | 3 | 4;
+  readonly tier: 1 | 2 | 3 | 4 | 5;
   readonly price: number;
   readonly blurb: string;
   readonly stats?: Partial<RigStats>;
@@ -145,6 +149,12 @@ export type GameState = {
   readonly brightness: number;
   readonly audio: AudioSettings;
   readonly guideSeen: boolean;
+  /** permanent prestige level — survives every prestige reset */
+  readonly prestige: number;
+  /** milestone reward ids already granted, never re-granted */
+  readonly prestigeClaimed: readonly string[];
+  /** career totals that survive prestige */
+  readonly lifetime: { readonly credits: number; readonly takedowns: number; readonly intel: number };
   readonly log: readonly LogLine[];
   readonly nextLineId: number;
 };

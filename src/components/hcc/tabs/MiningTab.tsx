@@ -177,7 +177,7 @@ export default function MiningTab() {
 
       <Panel label="FARM TELEMETRY" className="p-3">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="HASHRATE" value={`${read.effectiveHash.toFixed(0)} MH/s`} hint={`raw ${read.hash}`} />
+          <Stat label="HASHRATE" value={`${read.effectiveHash.toFixed(0)} MH/s`} hint={`raw ${Math.round(read.rawHash)}`} />
           <Stat label="DRAW" value={`${(read.watts / 1000).toFixed(2)} kW`} hint={`cap ${(read.capacityW / 1000).toFixed(0)} kW`} tone="amber" />
           <Stat label="THERMAL LOAD" value={read.heatLoad > 0 ? `+${read.heatLoad.toFixed(0)}` : "STABLE"} tone={read.heatLoad > 0 ? "red" : "green"} />
           <Stat label="RACK SLOTS" value={`${read.slotsUsed}/${read.slots}`} tone={read.slotsUsed > read.slots ? "red" : "cyan"} />
@@ -213,6 +213,56 @@ export default function MiningTab() {
             );
           })}
         </div>
+      </Panel>
+
+      <Panel label="YIELD BREAKDOWN" className="p-3">
+        <ul className="space-y-1 text-[11px]">
+          <li className="flex justify-between gap-2">
+            <span className="text-muted-foreground">Base hashrate (installed units)</span>
+            <span className="tabular-nums text-foreground">{Math.round(read.rawHash).toLocaleString()} MH/s</span>
+          </li>
+          <li className="flex justify-between gap-2">
+            <span className="text-muted-foreground">Efficiency (power · thermals · slots)</span>
+            <span className="tabular-nums text-foreground">×{read.throttle.toFixed(3)}</span>
+          </li>
+          {read.mulBreakdown.map((m) => (
+            <li key={m.label} className="flex justify-between gap-2">
+              <span className="truncate text-muted-foreground">{m.label}</span>
+              <span className="tabular-nums text-hud-green">×{m.mul.toFixed(2)}</span>
+            </li>
+          ))}
+          {read.mulBreakdown.length === 0 && (
+            <li className="text-[10px] text-muted-foreground">No yield multipliers owned yet — GPUs, PSUs and perks add them.</li>
+          )}
+          <li className="mt-1 flex justify-between gap-2 border-t border-border/60 pt-1">
+            <span className="tracking-[0.16em] text-muted-foreground">EFFECTIVE HASHRATE</span>
+            <span className="tabular-nums text-hud-cyan">{Math.round(read.effectiveHash).toLocaleString()} MH/s</span>
+          </li>
+        </ul>
+        <ul className="mt-3 space-y-1 border-t border-border/60 pt-2 text-[11px]">
+          <li className="flex justify-between gap-2">
+            <span className="text-muted-foreground">Gross revenue (all coins, at bid)</span>
+            <span className="tabular-nums text-hud-green">
+              {Math.round(read.revenuePerSec * 3600).toLocaleString()} cr/h
+            </span>
+          </li>
+          <li className="flex justify-between gap-2">
+            <span className="text-muted-foreground">Power &amp; demand charges</span>
+            <span className="tabular-nums text-hud-red">
+              −{Math.round(read.costPerSec * 3600).toLocaleString()} cr/h
+            </span>
+          </li>
+          <li className="mt-1 flex justify-between gap-2 border-t border-border/60 pt-1">
+            <span className="tracking-[0.16em] text-muted-foreground">NET</span>
+            <span className={cn("tabular-nums", read.netPerSec >= 0 ? "text-hud-green" : "text-hud-red")}>
+              {Math.round(read.netPerSec * 3600).toLocaleString()} cr/h · {Math.round(read.dailyNet).toLocaleString()} cr/day
+            </span>
+          </li>
+        </ul>
+        <p className="mt-2 text-[10px] text-muted-foreground">
+          Coins are mined continuously and credited on sale; the day figure is net cr/h × 24 at current prices and
+          difficulty, so it drifts with the market.
+        </p>
       </Panel>
 
       <Panel label="POWER CONTRACT" className="p-3">
