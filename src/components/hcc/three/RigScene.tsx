@@ -5,6 +5,7 @@ import * as THREE from "three";
 
 import SceneFrame from "./SceneFrame";
 import { makeScreenTexture } from "./screenTexture";
+import { DEFAULT_RIG_THEME, type RigTheme } from "@/lib/hcc/themes";
 import type { Quality } from "@/lib/hcc/types";
 
 export type RigVisual = {
@@ -19,29 +20,30 @@ export type RigVisual = {
   deskmat: number;
   poster: number;
   load: number;
+  /** cosmetic palette; purely visual */
+  theme?: RigTheme;
 };
 
-function Room({ accent }: { accent: string }) {
+function Room({ accent, theme }: { accent: string; theme: RigTheme }) {
   return (
     <group>
       <mesh position={[0, 2.2, -2.1]} receiveShadow>
         <planeGeometry args={[12, 5]} />
-        <meshStandardMaterial color="#101722" roughness={0.88} metalness={0.08} />
+        <meshStandardMaterial color={theme.wall} roughness={0.88} metalness={0.08} />
       </mesh>
-      <mesh position={[-3.4, 2.2, -2.08]}>
-        <planeGeometry args={[0.04, 3.2]} />
-        <meshStandardMaterial color="#000" emissive={accent} emissiveIntensity={3} toneMapped={false} />
-      </mesh>
-      <mesh position={[3.4, 2.2, -2.08]}>
-        <planeGeometry args={[0.04, 3.2]} />
-        <meshStandardMaterial color="#000" emissive={accent} emissiveIntensity={3} toneMapped={false} />
-      </mesh>
+      {[-3.4, 3.4].map((x) => (
+        <mesh key={x} position={[x, 2.2, -2.08]}>
+          <planeGeometry args={[0.04, 3.2]} />
+          <meshStandardMaterial color="#000" emissive={theme.glow} emissiveIntensity={3} toneMapped={false} />
+        </mesh>
+      ))}
       <pointLight position={[-2.6, 2.4, -1.4]} intensity={13} distance={9} color={accent} />
-      <pointLight position={[2.6, 2.4, -1.4]} intensity={9} distance={9} color="#4f86ff" />
-      <pointLight position={[0, 1.7, 1.4]} intensity={4} distance={6} color="#9fc6ff" />
+      <pointLight position={[2.6, 2.4, -1.4]} intensity={9} distance={9} color={theme.glow} />
+      <pointLight position={[0, 1.7, 1.4]} intensity={4} distance={6} color={theme.key} />
     </group>
   );
 }
+
 
 function Desk({ tier, accent, mat }: { tier: number; accent: string; mat: number }) {
   const topColor = tier >= 3 ? "#3a2517" : tier === 2 ? "#171b21" : "#20242a";
