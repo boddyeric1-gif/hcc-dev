@@ -26,7 +26,7 @@ describe("credit safety", () => {
   it("clamps nonsense claims to zero", () => {
     expect(safeCredits(Number.NaN)).toBe(0);
     expect(safeCredits(-5)).toBe(0);
-    expect(safeCredits(Infinity)).toBeGreaterThan(0);
+    expect(safeCredits(Infinity)).toBe(0);
     expect(safeCredits(12.9)).toBe(12);
   });
 
