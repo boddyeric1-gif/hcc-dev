@@ -149,19 +149,28 @@ export default function MiningScene({
   brightness?: number;
 }) {
   const hot = v.heatRatio > 0.75;
-  const shelves = Math.max(1, Math.min(3, v.shelves || 1));
+  const theme = v.theme ?? DEFAULT_MINER_THEME;
+
+  // Unlimited farm growth: shelves fill a row, then extra rows recede backwards.
+  const LEVELS = 3;
+  const PER_ROW = 5;
+  const total = v.gpuRigs + v.asics;
+  const shelves = Math.max(1, v.shelves || 1, Math.ceil(total / LEVELS));
+  const shelfSlots = Array.from({ length: shelves }, (_, i) => {
+    const row = Math.floor(i / PER_ROW);
+    const col = i % PER_ROW;
+    const inRow = Math.min(PER_ROW, shelves - row * PER_ROW);
+    return { x: (col - (inRow - 1) / 2) * 1.25, z: -1.1 - row * 1.35 };
+  });
+
   const positions: { p: [number, number, number]; asic: boolean }[] = [];
   let placed = 0;
-  const total = v.gpuRigs + v.asics;
-  for (let s = 0; s < shelves && placed < total; s++) {
-    for (let lvl = 0; lvl < 3 && placed < total; lvl++) {
-      const x = (s - (shelves - 1) / 2) * 1.25;
-      positions.push({
-        p: [x, 0.33 + lvl * 0.42, -1.1],
-        asic: placed >= v.gpuRigs,
-      });
+  for (const slot of shelfSlots) {
+    for (let lvl = 0; lvl < LEVELS && placed < total; lvl++) {
+      positions.push({ p: [slot.x, 0.33 + lvl * 0.42, slot.z], asic: placed >= v.gpuRigs });
       placed++;
     }
+    if (placed >= total) break;
   }
 
   return (
@@ -189,17 +198,18 @@ export default function MiningScene({
         opacity={quality === "performance" ? 0.008 : 0.014}
       />
 
-      {Array.from({ length: shelves }).map((_, i) => (
-        <Shelf key={i} x={(i - (shelves - 1) / 2) * 1.25} levels={3} accent={v.accent} />
+      {shelfSlots.map((s, i) => (
+        <Shelf key={i} x={s.x} z={s.z} levels={LEVELS} accent={theme.led} />
       ))}
 
       {positions.map((u, i) =>
         u.asic ? (
-          <Asic key={i} position={u.p} accent={v.accent} hot={hot} online={v.online} />
+          <Asic key={i} position={u.p} accent={v.accent} hot={hot} online={v.online} theme={theme} />
         ) : (
-          <GpuRig key={i} position={u.p} accent={v.accent} hot={hot} online={v.online} />
+          <GpuRig key={i} position={u.p} accent={v.accent} hot={hot} online={v.online} theme={theme} />
         ),
       )}
+
 
       {Array.from({ length: Math.min(4, v.fans) }).map((_, i) => (
         <Fan
