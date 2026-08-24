@@ -389,6 +389,7 @@ export type Action =
   | { type: "sell"; coin: Coin; at: number }
   | { type: "quality"; quality: Quality }
   | { type: "restore"; saved: Partial<GameState> }
+  | { type: "prestige" }
   | { type: "reset" };
 
 const pushLog = (s: GameState, text: string, tone: Tone = "sys"): GameState => {
@@ -445,20 +446,14 @@ export const reducer = (s: GameState, a: Action): GameState => {
       if (s.progress[a.id]?.seized) return { ...s, selected: a.id };
       if (s.active.includes(a.id)) return { ...s, selected: a.id };
       const slots = Math.max(1, Math.round(deriveStats(s).opSlots));
-      let next: GameState = { ...s, selected: a.id, active: [...s.active, a.id] };
-      let progress = next.progress;
-      while (next.active.length > slots) {
-        const [oldest, ...rest] = next.active;
-        if (!oldest) break;
-        const cold = findTarget(s, oldest);
-        progress = { ...progress, [oldest]: { evidence: [], seized: progress[oldest]?.seized ?? false } };
-        next = { ...next, active: rest, progress };
-        next = pushLog(
-          next,
-          `${cold?.codename ?? oldest} went cold — evidence lost. Buy parallel-op capacity to keep cases warm.`,
+      if (s.active.length >= slots) {
+        return pushLog(
+          { ...s, selected: a.id },
+          `All ${slots} channel${slots === 1 ? "" : "s"} are in use. Release a case or buy parallel-op tooling in the SHOP.`,
           "warn",
         );
       }
+      const next: GameState = { ...s, selected: a.id, active: [...s.active, a.id] };
       return pushLog(next, `Case engaged — ${t.codename}. ${next.active.length}/${slots} channels in use.`, "sys");
     }
     case "drop": {
@@ -496,8 +491,9 @@ export const reducer = (s: GameState, a: Action): GameState => {
       const op = t.ops.find((o) => o.kind === a.kind);
       if (!op) return s;
       if (!a.success) {
+        const fh = deriveStats(s).failHeatMul;
         let next = pushLog(s, `${op.label} failed on ${t.codename}. Session dropped.`, "bad");
-        next = withHeat(next, 9);
+        next = withHeat(next, 9 * fh);
         return next;
       }
       const prev = s.progress[a.targetId] ?? { evidence: [], seized: false };
@@ -531,6 +527,11 @@ export const reducer = (s: GameState, a: Action): GameState => {
         credits: s.credits + payout,
         intel: s.intel + t.intel,
         takedowns: s.takedowns + 1,
+        lifetime: {
+          credits: s.lifetime.credits + payout,
+          takedowns: s.lifetime.takedowns + 1,
+          intel: s.lifetime.intel + t.intel,
+        },
         progress: { ...s.progress, [a.targetId]: { ...p, seized: true } },
       };
       next = pushLog(next, `SERVER SEIZED — ${t.host} (${t.codename}) is offline.`, "ok");
@@ -678,7 +679,42 @@ export const reducer = (s: GameState, a: Action): GameState => {
         installed: { ...base.installed, ...(sv.installed ?? {}) },
         owned: Array.from(new Set([...base.owned, ...(sv.owned ?? [])])),
         mining: { ...base.mining, ...(sv.mining ?? {}) },
+        prestige: sv.prestige ?? 0,
+        prestigeClaimed: sv.prestigeClaimed ?? [],
+        lifetime: { ...base.lifetime, ...(sv.lifetime ?? {}) },
       };
+    }
+    case "prestige": {
+      if (!canPrestige(s)) return pushLog(s, "Prestige requirements not met.", "warn");
+      const level = s.prestige + 1;
+      const reward = rewardForLevel(level);
+      const base = initialState();
+      let next: GameState = {
+        ...base,
+        phase: s.phase,
+        tab: s.tab,
+        operator: s.operator,
+        quality: s.quality,
+        brightness: s.brightness,
+        audio: s.audio,
+        guideSeen: s.guideSeen,
+        log: s.log,
+        nextLineId: s.nextLineId,
+        prestige: level,
+        prestigeClaimed: reward ? [...s.prestigeClaimed, reward.id] : [...s.prestigeClaimed],
+        lifetime: s.lifetime,
+      };
+      next = pushLog(next, `PRESTIGE ${level} — case files sealed, desk cleared, badge upgraded.`, "ok");
+      if (reward) {
+        next = pushLog(next, `MILESTONE — ${reward.name}: ${reward.detail}`, "warn");
+        if (reward.effect.grant) {
+          next = { ...next, credits: next.credits + reward.effect.grant };
+          next = pushLog(next, `Restart grant: +${reward.effect.grant.toLocaleString()} cr.`, "ok");
+        }
+      } else {
+        next = pushLog(next, `No milestone at this level — next payout at prestige ${Math.floor(level / 5) * 5 + 5}.`, "dim");
+      }
+      return next;
     }
     case "reset":
       return { ...initialState(), phase: "online" };
