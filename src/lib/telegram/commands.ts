@@ -10,7 +10,8 @@ export type BotCommand =
   | "cases"
   | "targets"
   | "inventory"
-  | "mining";
+  | "mining"
+  | "paysupport";
 
 export type CommandSpec = {
   readonly command: BotCommand;
@@ -22,6 +23,8 @@ export type CommandSpec = {
   readonly text: string;
   /** label of the web_app button */
   readonly button: string;
+  /** when true the bot replies with text only — no Mini App launch button */
+  readonly replyOnly?: boolean;
 };
 
 export const COMMANDS: readonly CommandSpec[] = [
@@ -95,6 +98,21 @@ export const COMMANDS: readonly CommandSpec[] = [
     text: "Farm status: hash rate, power draw and coin allocation.",
     button: "Open mining farm",
   },
+  {
+    command: "paysupport",
+    description: "Help with Telegram Stars purchases",
+    tab: "shop",
+    text:
+      "H.C.C payment support\n\n" +
+      "Telegram Stars purchases are digital in-game items credited to your H.C.C operator automatically, usually within a few seconds of payment.\n\n" +
+      "If credits did not arrive:\n" +
+      "1. Reopen the Mini App — pending purchases are applied on launch.\n" +
+      "2. Make sure you are opening H.C.C from the same Telegram account that paid.\n" +
+      "3. Still missing after a few minutes? Reply here with the date and the item, and we will review the charge.\n\n" +
+      "Refunds for Stars are handled by Telegram support (Settings → My Stars). Purchased in-game items are consumable and non-transferable.",
+    button: "Open shop",
+    replyOnly: true,
+  },
 ];
 
 const BY_NAME = new Map(COMMANDS.map((c) => [c.command, c]));
@@ -115,4 +133,4 @@ export function miniAppUrl(baseUrl: string, tab: TabId): string {
 }
 
 export const UNKNOWN_COMMAND_TEXT =
-  "Unknown command. Try /play, /help, /shop, /targets, /cases, /inventory or /mining.";
+  "Unknown command. Try /play, /help, /shop, /targets, /cases, /inventory, /mining or /paysupport.";

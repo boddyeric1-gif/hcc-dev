@@ -4,9 +4,9 @@ import { Star } from "lucide-react";
 import { Chip, HudButton, Panel, Stat } from "../ui";
 import StarTestPurchase from "../StarTestPurchase";
 import { audio } from "@/lib/hcc/audio";
-import { useGame } from "@/lib/hcc/store";
+import { useGame, useStats } from "@/lib/hcc/store";
 import { itemById } from "@/lib/hcc/catalog";
-import { rankIndex, shopItems } from "@/lib/hcc/state";
+import { deriveStats, rankIndex, shopItems } from "@/lib/hcc/state";
 import type { ItemCategory } from "@/lib/hcc/types";
 import { getTelegramWebApp, useTelegram } from "@/hooks/useTelegram";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,7 @@ const CATS: { id: ItemCategory; label: string }[] = [
 
 export default function ShopTab() {
   const { state, dispatch } = useGame();
+  const stats = useStats();
   const [cat, setCat] = useState<ItemCategory>("hardware");
   const { isTelegram } = useTelegram();
   const rank = rankIndex(state.intel);
@@ -95,6 +96,7 @@ export default function ShopTab() {
                   {it.mining.capacityKw} kW · {it.mining.pricePerKwh} cr/kWh
                 </p>
               )}
+              <EffectPreview id={it.id} owned={owned} />
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs tabular-nums text-hud-amber">
                   {it.price === 0 ? "OWNED" : `${it.price.toLocaleString()} cr`}
@@ -147,5 +149,58 @@ export default function ShopTab() {
         Current contract: {itemById(state.mining.contract)?.name}
       </p>
     </div>
+  );
+}
+
+type Delta = { label: string; before: string; after: string };
+
+function effectDeltas(state: Parameters<typeof deriveStats>[0], id: string): Delta[] {
+  const item = itemById(id);
+  if (!item) return [];
+  const before = deriveStats(state);
+  const projected = {
+    ...state,
+    owned: state.owned.includes(id) ? state.owned : [...state.owned, id],
+    installed: item.slot ? { ...state.installed, [item.slot]: id } : state.installed,
+  };
+  const after = deriveStats(projected);
+  const out: Delta[] = [];
+  const push = (label: string, b: number, a: number, fmt: (n: number) => string) => {
+    if (Math.abs(a - b) < 0.0001) return;
+    out.push({ label, before: fmt(b), after: fmt(a) });
+  };
+  const pct = (n: number) => `${Math.round(n * 100)}%`;
+  push("CRACK POWER", before.crack, after.crack, pct);
+  push("SCAN SPEED", before.scan, after.scan, (n) => `${n.toFixed(1)}x`);
+  push("STEALTH", before.dissipation, after.dissipation, (n) => n.toFixed(0));
+  push("BOUNTY", before.bounty, after.bounty, (n) => `+${Math.round(n * 100)}%`);
+  push("MINING YIELD", before.miningMul, after.miningMul, (n) => `${n.toFixed(2)}x`);
+  push(
+    "ACTIVE CHANNELS",
+    Math.max(1, Math.round(before.opSlots)),
+    Math.max(1, Math.round(after.opSlots)),
+    (n) => `${n} / ${n}`,
+  );
+  push("FAIL HEAT", before.failHeatMul, after.failHeatMul, (n) => `${Math.round(n * 100)}%`);
+  push("MINING HEAT", before.miningHeatMul, after.miningHeatMul, (n) => `${Math.round(n * 100)}%`);
+  return out;
+}
+
+function EffectPreview({ id, owned }: { id: string; owned: boolean }) {
+  const { state } = useGame();
+  const deltas = effectDeltas(state, id);
+  if (deltas.length === 0) return null;
+  return (
+    <ul className="mt-2 space-y-0.5 rounded-md border border-border/50 bg-background/40 p-2">
+      {deltas.map((d) => (
+        <li key={d.label} className="flex items-center justify-between gap-2 text-[10px]">
+          <span className="tracking-[0.16em] text-muted-foreground">{d.label}</span>
+          <span className="tabular-nums text-muted-foreground">
+            {d.before} <span className="text-hud-cyan">→</span>{" "}
+            <span className={owned ? "text-hud-green/70" : "text-hud-green"}>{d.after}</span>
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
