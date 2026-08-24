@@ -1,6 +1,7 @@
 import { CATALOG, COINS, DEFAULT_INSTALLED, STARTER_OWNED, itemById } from "./catalog";
 import { contractRead, difficulty, quote, sellQuote, type ContractRead, type Regime } from "./market";
 import { TARGETS, targetById } from "./targets";
+import { canPrestige, prestigeBonuses, rewardForLevel } from "./prestige";
 import type {
   AudioSettings,
   Target,
@@ -71,6 +72,9 @@ export const initialState = (): GameState => ({
   brightness: 1.25,
   audio: { muted: false, music: 0.45, sfx: 0.7 },
   guideSeen: false,
+  prestige: 0,
+  prestigeClaimed: [],
+  lifetime: { credits: 0, takedowns: 0, intel: 0 },
   log: [],
   nextLineId: 1,
 });
@@ -83,6 +87,8 @@ const BASE_STATS: RigStats = {
   miningMul: 1,
   coolingWatts: 0,
   opSlots: 1,
+  failHeatMul: 1,
+  miningHeatMul: 1,
 };
 
 export const deriveStats = (s: GameState): RigStats => {
@@ -106,8 +112,39 @@ export const deriveStats = (s: GameState): RigStats => {
     out.coolingWatts += st.coolingWatts ?? 0;
     out.opSlots += st.opSlots ?? 0;
     if (st.miningMul) out.miningMul *= st.miningMul;
+    if (st.failHeatMul) out.failHeatMul *= st.failHeatMul;
+    if (st.miningHeatMul) out.miningHeatMul *= st.miningHeatMul;
   });
+  const pb = prestigeBonuses(s);
+  out.bounty += pb.bounty;
+  out.miningMul *= pb.miningMul;
+  out.opSlots += pb.opSlots;
+  out.crack += pb.crack;
+  out.dissipation += pb.dissipation;
   out.crack = Math.min(0.92, out.crack);
+  out.failHeatMul = Math.max(0.15, out.failHeatMul);
+  out.miningHeatMul = Math.max(0.2, out.miningHeatMul);
+  return out;
+};
+
+/** Every multiplicative contribution to mining yield, for the transparency panel. */
+export const miningMulBreakdown = (s: GameState): { label: string; mul: number }[] => {
+  const out: { label: string; mul: number }[] = [];
+  const seen: Item[] = [];
+  Object.values(s.installed).forEach((id) => {
+    const it = itemById(id);
+    if (it) seen.push(it);
+  });
+  s.owned.forEach((id) => {
+    const it = itemById(id);
+    if (it && (it.category === "tools" || it.category === "perks")) seen.push(it);
+  });
+  seen.forEach((it) => {
+    const m = it.stats?.miningMul;
+    if (m && m !== 1) out.push({ label: it.name, mul: m });
+  });
+  const pb = prestigeBonuses(s);
+  if (pb.miningMul !== 1) out.push({ label: `Prestige ${s.prestige}`, mul: pb.miningMul });
   return out;
 };
 
@@ -148,6 +185,13 @@ export type MiningReadout = {
   limiter: string;
   coins: Record<Coin, CoinReadout>;
   totalNetPerSec: number;
+  /** raw catalogue hashrate before throttle and multipliers */
+  rawHash: number;
+  yieldMul: number;
+  mulBreakdown: { label: string; mul: number }[];
+  revenuePerSec: number;
+  dailyGross: number;
+  dailyPower: number;
 };
 
 const COIN_LIST: readonly Coin[] = ["BTC", "ETH", "GHST"];
@@ -200,7 +244,7 @@ export const deriveMining = (s: GameState, at: number): MiningReadout => {
     slotsUsed += count;
     hash += m.hash * count;
     watts += m.watts * count;
-    heat += m.heat * count;
+    heat += m.heat * count * stats.miningHeatMul;
     const alloc = unitAllocation(s, id);
     COIN_LIST.forEach((c) => {
       coinHash[c] += m.hash * alloc[c];
@@ -296,6 +340,12 @@ export const deriveMining = (s: GameState, at: number): MiningReadout => {
     limiter,
     coins,
     totalNetPerSec: netPerSec,
+    rawHash: hash,
+    yieldMul: stats.miningMul,
+    mulBreakdown: miningMulBreakdown(s),
+    revenuePerSec,
+    dailyGross: revenuePerSec * 86400,
+    dailyPower: costPerSec * 86400,
   };
 };
 
