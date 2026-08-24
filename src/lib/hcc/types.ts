@@ -170,6 +170,8 @@ export type GameState = {
   readonly guideSeen: boolean;
   /** mirror of the server-authoritative Operative Pass state */
   readonly premium: PremiumState;
+  /** server-authoritative wallet mirror; local math is optimistic only */
+  readonly wallet: WalletState;
   /** permanent prestige level — survives every prestige reset */
   readonly prestige: number;
   /** milestone reward ids already granted, never re-granted */
