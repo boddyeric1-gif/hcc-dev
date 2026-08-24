@@ -65,6 +65,7 @@ export type Database = {
           migration_source: string | null
           migration_version: number | null
           miner_units: Json
+          mining_allowance: number
           owned: string[]
           prestige: number
           telegram_user_id: number
@@ -81,6 +82,7 @@ export type Database = {
           migration_source?: string | null
           migration_version?: number | null
           miner_units?: Json
+          mining_allowance?: number
           owned?: string[]
           prestige?: number
           telegram_user_id: number
@@ -97,6 +99,7 @@ export type Database = {
           migration_source?: string | null
           migration_version?: number | null
           miner_units?: Json
+          mining_allowance?: number
           owned?: string[]
           prestige?: number
           telegram_user_id?: number
@@ -251,6 +254,16 @@ export type Database = {
       hcc_set_prestige: {
         Args: { _level: number; _user_id: number }
         Returns: number
+      }
+      hcc_settle_mining: {
+        Args: {
+          _claimed_credits: number
+          _idempotency_key: string
+          _max_seconds: number
+          _rate_per_sec: number
+          _user_id: number
+        }
+        Returns: Json
       }
     }
     Enums: {
