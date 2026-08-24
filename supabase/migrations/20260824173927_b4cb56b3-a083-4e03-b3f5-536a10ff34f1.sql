@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.hcc_settle_mining(bigint, numeric, integer, bigint, text) FROM anon, authenticated;
