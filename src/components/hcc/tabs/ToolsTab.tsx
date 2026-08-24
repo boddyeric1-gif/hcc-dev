@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 
+import ChannelBoard from "../ChannelBoard";
 import Cipher from "../tools/Cipher";
 import LedgerTrace from "../tools/LedgerTrace";
 import PortMapper from "../tools/PortMapper";
@@ -51,6 +52,7 @@ export default function ToolsTab() {
 
   return (
     <div className="space-y-3">
+      <ChannelBoard compact />
       <Panel label="TOOLKIT" className="p-3">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -85,7 +87,7 @@ export default function ToolsTab() {
           <p className="text-xs text-muted-foreground">
             {target.codename} is not on an active channel.{" "}
             {state.active.length >= slots
-              ? "All channels are in use — engaging will let the oldest case go cold."
+              ? "All channels are in use. Release a case above or buy more parallel-op capacity."
               : "Engage to open a channel and start collecting evidence."}
           </p>
           <HudButton className="mt-3" size="sm" onClick={() => dispatch({ type: "engage", id: target.id })}>
