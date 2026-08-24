@@ -1,0 +1,20 @@
+REVOKE EXECUTE ON FUNCTION public.hcc_apply(bigint, bigint, text, text, text, text, jsonb) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.hcc_purchase(bigint, text, bigint, boolean, text, boolean, boolean, text) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.hcc_migrate_legacy(bigint, bigint, bigint, text, integer) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.hcc_account(bigint) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.hcc_open_settlement(bigint, integer) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.hcc_set_prestige(bigint, integer) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.hcc_ensure_account(bigint) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.hcc_touch_updated_at() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.hcc_claim_daily(bigint) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.hcc_grant_premium(bigint, integer) FROM PUBLIC;
+
+GRANT EXECUTE ON FUNCTION public.hcc_apply(bigint, bigint, text, text, text, text, jsonb) TO service_role;
+GRANT EXECUTE ON FUNCTION public.hcc_purchase(bigint, text, bigint, boolean, text, boolean, boolean, text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.hcc_migrate_legacy(bigint, bigint, bigint, text, integer) TO service_role;
+GRANT EXECUTE ON FUNCTION public.hcc_account(bigint) TO service_role;
+GRANT EXECUTE ON FUNCTION public.hcc_open_settlement(bigint, integer) TO service_role;
+GRANT EXECUTE ON FUNCTION public.hcc_set_prestige(bigint, integer) TO service_role;
+GRANT EXECUTE ON FUNCTION public.hcc_ensure_account(bigint) TO service_role;
+GRANT EXECUTE ON FUNCTION public.hcc_claim_daily(bigint) TO service_role;
+GRANT EXECUTE ON FUNCTION public.hcc_grant_premium(bigint, integer) TO service_role;

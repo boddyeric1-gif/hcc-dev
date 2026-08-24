@@ -1,6 +1,6 @@
 import { callBotApi } from "./bot.server";
 import { verifyInitData } from "./initdata.server";
-import { buildInvoicePayload, starProductById, type StarProduct } from "./stars";
+import { CREDITS_PER_DAILY_DROP, buildInvoicePayload, starProductById, type StarProduct } from "./stars";
 
 export function requireBotToken(): string {
   const token = process.env["TELEGRAM_BOT_TOKEN"];
@@ -103,6 +103,8 @@ export type ClaimResult = {
   itemIds: string[];
   purchases: number;
   premium: PremiumSnapshot;
+  /** authoritative balance after the claim, or null when the ledger is unavailable */
+  balance: number | null;
 };
 
 /**
@@ -116,18 +118,29 @@ export async function claimCreditsFor(telegramUserId: number): Promise<ClaimResu
     .update({ claimed_at: new Date().toISOString() })
     .eq("telegram_user_id", telegramUserId)
     .is("claimed_at", null)
-    .select("credits, item_ids");
+    .select("credits, item_ids, telegram_payment_charge_id");
   if (error) {
     console.error(`Failed to claim star credits: ${error.message}`);
     throw new Error("Could not claim credits");
   }
   const rows = data ?? [];
   const itemIds = [...new Set(rows.flatMap((r) => r.item_ids ?? []))];
+  // Credits land in the authoritative ledger, keyed by charge id so a replay
+  // of the same purchase can never pay twice.
+  const { creditStars } = await import("@/lib/hcc/wallet.server");
+  let balance: number | null = null;
+  for (const row of rows) {
+    if (row.credits > 0) {
+      const res = await creditStars(telegramUserId, row.telegram_payment_charge_id, row.credits);
+      balance = res.balance;
+    }
+  }
   return {
     credits: rows.reduce((sum, r) => sum + r.credits, 0),
     itemIds,
     purchases: rows.length,
     premium: await readPremium(telegramUserId),
+    balance,
   };
 }
 
@@ -142,12 +155,23 @@ export async function premiumStatusFor(telegramUserId: number): Promise<PremiumS
  */
 export async function claimDailyFor(
   telegramUserId: number,
-): Promise<{ credits: number; premium: PremiumSnapshot }> {
+): Promise<{ credits: number; premium: PremiumSnapshot; balance: number | null }> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin.rpc("hcc_claim_daily", { _user_id: telegramUserId });
   if (error) {
     console.error(`Failed to claim daily drop: ${error.message}`);
     throw new Error("Could not claim daily drop");
   }
-  return { credits: Number(data ?? 0), premium: await readPremium(telegramUserId) };
+  const claimed = data === true;
+  let balance: number | null = null;
+  if (claimed) {
+    const { creditDailyDrop } = await import("@/lib/hcc/wallet.server");
+    const day = new Date().toISOString().slice(0, 10);
+    balance = (await creditDailyDrop(telegramUserId, day, CREDITS_PER_DAILY_DROP)).balance;
+  }
+  return {
+    credits: claimed ? CREDITS_PER_DAILY_DROP : 0,
+    premium: await readPremium(telegramUserId),
+    balance,
+  };
 }
