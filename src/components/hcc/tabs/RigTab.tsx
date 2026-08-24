@@ -56,6 +56,7 @@ export default function RigTab() {
       poster: state.installed.poster ? tier("poster") : 0,
       accent: LIGHT_HEX[state.installed.lighting ?? "light-cyan"] ?? "#38e1ff",
       load: Math.min(1, stats.crack),
+      theme: rigTheme(state.installed.rigTheme),
     };
   }, [state.installed, stats.crack]);
 
