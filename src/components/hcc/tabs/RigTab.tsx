@@ -7,6 +7,7 @@ import type { RigVisual } from "../three/RigScene";
 import { useGame, useStats } from "@/lib/hcc/store";
 import { LIGHT_HEX, SLOT_LABEL, itemById } from "@/lib/hcc/catalog";
 import { ownedSlotItems } from "@/lib/hcc/state";
+import { rigTheme } from "@/lib/hcc/themes";
 import type { Quality, Slot } from "@/lib/hcc/types";
 import { cn } from "@/lib/utils";
 
@@ -56,6 +57,7 @@ export default function RigTab() {
       poster: state.installed.poster ? tier("poster") : 0,
       accent: LIGHT_HEX[state.installed.lighting ?? "light-cyan"] ?? "#38e1ff",
       load: Math.min(1, stats.crack),
+      theme: rigTheme(state.installed.rigTheme),
     };
   }, [state.installed, stats.crack]);
 

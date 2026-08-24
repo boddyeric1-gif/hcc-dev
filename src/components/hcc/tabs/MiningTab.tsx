@@ -9,6 +9,7 @@ import { COINS, CATALOG, LIGHT_HEX, itemById } from "@/lib/hcc/catalog";
 import { deriveMining, unitAllocation } from "@/lib/hcc/state";
 import { priceHistory, sellQuote } from "@/lib/hcc/market";
 import { activeNews, recentNews } from "@/lib/hcc/news";
+import { minerTheme } from "@/lib/hcc/themes";
 import type { Coin } from "@/lib/hcc/types";
 import { cn } from "@/lib/utils";
 
@@ -52,15 +53,17 @@ export default function MiningTab() {
       if (m.kind === "cooler") fans += n;
     });
     return {
-      gpuRigs: Math.min(6, gpuRigs),
-      asics: Math.min(6, asics),
-      shelves: Math.max(1, Math.min(3, shelves)),
+      // Farm scales without a visual cap; rows recede as hardware is added.
+      gpuRigs: Math.min(60, gpuRigs),
+      asics: Math.min(60, asics),
+      shelves: Math.max(1, shelves),
       fans,
       heatRatio: read.coolingCap > 0 ? read.heatLoad / (read.coolingCap + 1) : read.heatLoad / 40,
       online: read.effectiveHash > 0,
       accent: LIGHT_HEX[state.installed.lighting ?? "light-cyan"] ?? "#38e1ff",
+      theme: minerTheme(state.installed.minerTheme),
     };
-  }, [units, read, state.installed.lighting]);
+  }, [units, read, state.installed.lighting, state.installed.minerTheme]);
 
   const news = useMemo(() => recentNews(now, 5), [now]);
   const live = useMemo(() => new Set(activeNews(now).map((e) => e.id)), [now]);
