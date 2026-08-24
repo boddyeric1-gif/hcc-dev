@@ -711,7 +711,8 @@ export const reducer = (s: GameState, a: Action): GameState => {
     case "mining-accrue":
       return {
         ...s,
-        credits: Math.max(0, s.credits - a.cost),
+        // In server mode power costs are netted off at settlement, not locally.
+        credits: s.wallet.mode === "server" ? s.credits : Math.max(0, s.credits - a.cost),
         mining: {
           ...s.mining,
           lastTick: a.at,
