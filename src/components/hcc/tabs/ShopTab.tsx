@@ -116,11 +116,16 @@ export default function ShopTab() {
                           ? "Buy unit"
                           : "Acquire"}
                   </HudButton>
-                  {premium && isTelegram && !locked && (owned ? it.stackable : true) && (
-                    <HudButton size="sm" tone="amber" onClick={() => handleStarPurchase(it.id)}>
+                  {starDeal && isTelegram && !owned && (
+                    <HudButton
+                      size="sm"
+                      tone="amber"
+                      disabled={!ready}
+                      onClick={() => void buyWithStars(starDeal.id)}
+                    >
                       <span className="inline-flex items-center gap-1">
                         <Star className="size-3" strokeWidth={2} />
-                        Stars
+                        {starDeal.stars}
                       </span>
                     </HudButton>
                   )}
