@@ -40,37 +40,62 @@ function Fan({ position, speed, size = 0.22 }: { position: [number, number, numb
   );
 }
 
-function GpuRig({ position, accent, hot, online }: { position: [number, number, number]; accent: string; hot: boolean; online: boolean }) {
+function GpuRig({
+  position,
+  accent,
+  hot,
+  online,
+  theme,
+}: {
+  position: [number, number, number];
+  accent: string;
+  hot: boolean;
+  online: boolean;
+  theme: MinerTheme;
+}) {
   return (
     <group position={position}>
       <RoundedBox args={[0.94, 0.06, 0.42]} radius={0.01} smoothness={3} castShadow>
-        <meshStandardMaterial color="#0e1218" roughness={0.35} metalness={0.9} />
+        <meshStandardMaterial color={theme.chassis} roughness={theme.roughness} metalness={theme.metalness} />
       </RoundedBox>
       {[-0.36, -0.18, 0, 0.18, 0.36].map((x) => (
         <group key={x} position={[x, 0.11, 0]}>
           <RoundedBox args={[0.13, 0.16, 0.4]} radius={0.01} smoothness={3} castShadow>
-            <meshStandardMaterial color="#0b0f14" roughness={0.3} metalness={0.85} />
+            <meshStandardMaterial color={theme.trim} roughness={theme.roughness} metalness={theme.metalness} />
           </RoundedBox>
           <mesh position={[0, 0.085, 0]}>
             <boxGeometry args={[0.1, 0.005, 0.34]} />
             <meshStandardMaterial
               color="#04070a"
-              emissive={online ? (hot ? "#ff3355" : accent) : "#0a0f14"}
+              emissive={online ? (hot ? "#ff3355" : theme.led) : "#0a0f14"}
               emissiveIntensity={online ? 2.4 : 0}
               toneMapped={false}
             />
           </mesh>
         </group>
       ))}
+      <pointLight position={[0, 0.2, 0.3]} intensity={online ? 0.5 : 0} distance={0.9} color={accent} />
     </group>
   );
 }
 
-function Asic({ position, accent, hot, online }: { position: [number, number, number]; accent: string; hot: boolean; online: boolean }) {
+function Asic({
+  position,
+  accent,
+  hot,
+  online,
+  theme,
+}: {
+  position: [number, number, number];
+  accent: string;
+  hot: boolean;
+  online: boolean;
+  theme: MinerTheme;
+}) {
   return (
     <group position={position}>
       <RoundedBox args={[0.88, 0.26, 0.34]} radius={0.02} smoothness={4} castShadow>
-        <meshStandardMaterial color="#171b21" roughness={0.28} metalness={0.95} />
+        <meshStandardMaterial color={theme.chassis} roughness={theme.roughness} metalness={theme.metalness} />
       </RoundedBox>
       <Fan position={[-0.28, 0, 0.18]} speed={online ? 16 : 0} size={0.1} />
       <Fan position={[0.02, 0, 0.18]} speed={online ? 16 : 0} size={0.1} />
@@ -78,37 +103,35 @@ function Asic({ position, accent, hot, online }: { position: [number, number, nu
         <planeGeometry args={[0.1, 0.03]} />
         <meshStandardMaterial
           color="#04070a"
-          emissive={online ? (hot ? "#ff3355" : accent) : "#0a0f14"}
+          emissive={online ? (hot ? "#ff3355" : theme.led) : "#0a0f14"}
           emissiveIntensity={online ? 3 : 0}
           toneMapped={false}
         />
       </mesh>
+      <pointLight position={[0.3, 0.05, 0.3]} intensity={online ? 0.4 : 0} distance={0.8} color={accent} />
     </group>
   );
 }
 
-function Shelf({ x, levels, accent }: { x: number; levels: number; accent: string }) {
+function Shelf({ x, z, levels, accent }: { x: number; z: number; levels: number; accent: string }) {
+  const height = 0.28 + levels * 0.42;
   return (
-    <group position={[x, 0, -1.1]}>
-      {[-0.45, 0.45].map((z) => (
-        <mesh key={z} position={[-0.5, 0.62, z]} castShadow>
-          <boxGeometry args={[0.05, 1.24, 0.05]} />
-          <meshStandardMaterial color="#12171d" roughness={0.35} metalness={0.9} />
-        </mesh>
-      ))}
-      {[-0.45, 0.45].map((z) => (
-        <mesh key={`r${z}`} position={[0.5, 0.62, z]} castShadow>
-          <boxGeometry args={[0.05, 1.24, 0.05]} />
-          <meshStandardMaterial color="#12171d" roughness={0.35} metalness={0.9} />
-        </mesh>
-      ))}
+    <group position={[x, 0, z]}>
+      {[-0.45, 0.45].flatMap((zo) =>
+        [-0.5, 0.5].map((xo) => (
+          <mesh key={`${xo}:${zo}`} position={[xo, height / 2, zo]} castShadow>
+            <boxGeometry args={[0.05, height, 0.05]} />
+            <meshStandardMaterial color="#12171d" roughness={0.35} metalness={0.9} />
+          </mesh>
+        )),
+      )}
       {Array.from({ length: levels }).map((_, i) => (
         <mesh key={i} position={[0, 0.28 + i * 0.42, 0]} receiveShadow castShadow>
           <boxGeometry args={[1.06, 0.03, 1]} />
           <meshStandardMaterial color="#0f141a" roughness={0.4} metalness={0.85} />
         </mesh>
       ))}
-      <mesh position={[0, 1.26, 0]}>
+      <mesh position={[0, height, 0]}>
         <boxGeometry args={[1.02, 0.01, 0.02]} />
         <meshStandardMaterial color="#000" emissive={accent} emissiveIntensity={1.6} toneMapped={false} />
       </mesh>
