@@ -74,6 +74,7 @@ export const initialState = (): GameState => ({
   audio: { muted: false, music: 0.45, sfx: 0.7 },
   guideSeen: false,
   premium: { expiresAt: null, lastClaimOn: null, syncedAt: 0 },
+  wallet: { mode: "local", balance: 0, syncedAt: 0, migrated: false, pending: false },
   prestige: 0,
   prestigeClaimed: [],
   lifetime: { credits: 0, takedowns: 0, intel: 0 },
@@ -400,6 +401,9 @@ export type Action =
   | { type: "install"; id: string }
   | { type: "grant-credits"; amount: number; reason: string }
   | { type: "grant-items"; ids: readonly string[]; reason: string }
+  | { type: "wallet-mode"; mode: "local" | "server" }
+  | { type: "wallet-sync"; balance: number; owned?: readonly string[]; prestige?: number; at: number }
+  | { type: "wallet-pending"; pending: boolean }
   | { type: "premium-sync"; expiresAt: number | null; lastClaimOn: string | null; at: number }
   | { type: "scrub" }
   | { type: "mining-coin"; coin: Coin }
@@ -648,6 +652,21 @@ export const reducer = (s: GameState, a: Action): GameState => {
         "sys",
       );
     }
+    /** The backend is the source of truth: its balance replaces local math. */
+    case "wallet-sync": {
+      const balance = Math.max(0, Math.floor(a.balance));
+      return {
+        ...s,
+        credits: balance,
+        owned: a.owned ? Array.from(new Set([...s.owned, ...a.owned])) : s.owned,
+        prestige: typeof a.prestige === "number" ? a.prestige : s.prestige,
+        wallet: { ...s.wallet, balance, syncedAt: a.at, migrated: true, pending: false },
+      };
+    }
+    case "wallet-mode":
+      return { ...s, wallet: { ...s.wallet, mode: a.mode } };
+    case "wallet-pending":
+      return { ...s, wallet: { ...s.wallet, pending: a.pending } };
     case "scrub": {
       const cost = 600;
       if (s.credits < cost) return pushLog(s, "Insufficient credits to scrub logs.", "warn");
@@ -742,6 +761,7 @@ export const reducer = (s: GameState, a: Action): GameState => {
         prestigeClaimed: sv.prestigeClaimed ?? [],
         lifetime: { ...base.lifetime, ...(sv.lifetime ?? {}) },
         premium: { ...base.premium, ...(sv.premium ?? {}) },
+        wallet: { ...base.wallet, ...(sv.wallet ?? {}) },
       };
     }
     case "prestige": {
@@ -763,6 +783,7 @@ export const reducer = (s: GameState, a: Action): GameState => {
         guideSeen: s.guideSeen,
         // paid entitlements survive prestige
         premium: s.premium,
+        wallet: s.wallet,
         log: s.log,
         nextLineId: s.nextLineId,
         prestige: level,

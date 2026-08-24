@@ -147,6 +147,15 @@ export type AudioSettings = {
   readonly sfx: number;
 };
 
+/** Mirror of the backend credit ledger. `mode` is 'server' once linked. */
+export type WalletState = {
+  readonly mode: "local" | "server";
+  readonly balance: number;
+  readonly syncedAt: number;
+  readonly migrated: boolean;
+  readonly pending: boolean;
+};
+
 export type GameState = {
   readonly phase: "offline" | "auth" | "online";
   readonly operator: string | null;
