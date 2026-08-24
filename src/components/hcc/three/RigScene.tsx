@@ -268,26 +268,52 @@ export default function RigScene({
   const texB = useMemo(() => makeScreenTexture("graph", v.accent), [v.accent]);
   const texC = useMemo(() => makeScreenTexture("map", v.accent), [v.accent]);
 
-  const monitors = useMemo(() => {
-    const h = v.monitors >= 4 ? 0.46 : v.monitors >= 3 ? 0.4 : 0.36;
-    const w = v.monitors >= 4 ? 1.6 : v.monitors >= 3 ? 0.72 : 0.66;
-    if (v.monitors <= 1) return [{ p: [0, 1.06, -0.32] as [number, number, number], r: [0, 0, 0] as [number, number, number], s: [0.7, 0.42] as [number, number], t: texA }];
-    if (v.monitors === 2)
+  const theme = v.theme ?? DEFAULT_RIG_THEME;
+
+  type Panel = { p: [number, number, number]; r: [number, number, number]; s: [number, number]; t: THREE.Texture };
+
+  /**
+   * Display wall. Counts above 3 keep adding real panels — a curved lower row
+   * plus stacked overhead rows — so there is no visual cap on the monitor tier.
+   */
+  const monitors = useMemo<Panel[]>(() => {
+    const texes = [texA, texB, texC];
+    const count = Math.max(1, v.monitors);
+    if (count === 1) return [{ p: [0, 1.06, -0.32], r: [0, 0, 0], s: [0.7, 0.42], t: texA }];
+    if (count === 2)
       return [
-        { p: [-0.4, 1.05, -0.3], r: [0, 0.22, 0], s: [w, h], t: texA },
-        { p: [0.4, 1.05, -0.3], r: [0, -0.22, 0], s: [w, h], t: texB },
-      ] as { p: [number, number, number]; r: [number, number, number]; s: [number, number]; t: THREE.Texture }[];
-    if (v.monitors === 3)
-      return [
-        { p: [-0.82, 1.06, -0.18], r: [0, 0.42, 0], s: [w, h], t: texC },
-        { p: [0, 1.08, -0.36], r: [0, 0, 0], s: [w, h], t: texA },
-        { p: [0.82, 1.06, -0.18], r: [0, -0.42, 0], s: [w, h], t: texB },
-      ] as { p: [number, number, number]; r: [number, number, number]; s: [number, number]; t: THREE.Texture }[];
-    return [
-      { p: [0, 1.05, -0.34], r: [0, 0, 0], s: [w, h], t: texA },
-      { p: [0, 1.5, -0.4], r: [-0.12, 0, 0], s: [0.9, 0.32], t: texB },
-    ] as { p: [number, number, number]; r: [number, number, number]; s: [number, number]; t: THREE.Texture }[];
+        { p: [-0.4, 1.05, -0.3], r: [0, 0.22, 0], s: [0.66, 0.36], t: texA },
+        { p: [0.4, 1.05, -0.3], r: [0, -0.22, 0], s: [0.66, 0.36], t: texB },
+      ];
+
+    const out: Panel[] = [];
+    const lower = Math.min(count, 3);
+    const w = 0.72;
+    const h = 0.4;
+    for (let i = 0; i < lower; i++) {
+      const off = i - (lower - 1) / 2;
+      out.push({
+        p: [off * 0.82, 1.06, -0.36 + Math.abs(off) * 0.18],
+        r: [0, -off * 0.42, 0],
+        s: [w, h],
+        t: texes[i % texes.length]!,
+      });
+    }
+    // Overhead rows: every extra display stacks upward, two per row.
+    for (let i = lower; i < count; i++) {
+      const idx = i - lower;
+      const row = Math.floor(idx / 2);
+      const col = idx % 2 === 0 ? -0.42 : 0.42;
+      out.push({
+        p: [col, 1.52 + row * 0.36, -0.42],
+        r: [-0.14, -col * 0.3, 0],
+        s: [0.78, 0.3],
+        t: texes[i % texes.length]!,
+      });
+    }
+    return out;
   }, [v.monitors, texA, texB, texC]);
+
 
   return (
     <SceneFrame
