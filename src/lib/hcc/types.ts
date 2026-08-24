@@ -55,7 +55,11 @@ export type Slot =
   | "router"
   | "lighting"
   | "deskmat"
-  | "poster";
+  | "poster"
+  | "rigTheme"
+  | "minerTheme"
+  | "uiTheme"
+  | "badge";
 
 export type ItemCategory = "hardware" | "tools" | "perks" | "mining" | "custom";
 
@@ -99,7 +103,8 @@ export type Item = {
   readonly name: string;
   readonly category: ItemCategory;
   readonly slot?: Slot;
-  readonly tier: 1 | 2 | 3 | 4 | 5;
+  /** progression tier. Open-ended so T6+ content needs no type change. */
+  readonly tier: number;
   readonly price: number;
   readonly blurb: string;
   readonly stats?: Partial<RigStats>;
@@ -121,6 +126,20 @@ export type MiningState = {
   readonly balances: Readonly<Record<Coin, number>>;
   readonly lastTick: number;
 };
+/**
+ * Mirror of the server's Operative Pass record. The server is authoritative for
+ * both expiry and daily claims; this copy only drives the UI and the local
+ * mining multiplier between syncs.
+ */
+export type PremiumState = {
+  /** epoch ms from the server, or null when no pass has ever been bought */
+  readonly expiresAt: number | null;
+  /** UTC date string (YYYY-MM-DD) of the last claimed daily drop */
+  readonly lastClaimOn: string | null;
+  /** server clock at the moment of the last sync, for drift-tolerant display */
+  readonly syncedAt: number;
+};
+
 
 export type AudioSettings = {
   readonly muted: boolean;
@@ -149,6 +168,8 @@ export type GameState = {
   readonly brightness: number;
   readonly audio: AudioSettings;
   readonly guideSeen: boolean;
+  /** mirror of the server-authoritative Operative Pass state */
+  readonly premium: PremiumState;
   /** permanent prestige level — survives every prestige reset */
   readonly prestige: number;
   /** milestone reward ids already granted, never re-granted */

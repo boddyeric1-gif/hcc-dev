@@ -2,6 +2,7 @@ import { CATALOG, COINS, DEFAULT_INSTALLED, STARTER_OWNED, itemById } from "./ca
 import { contractRead, difficulty, quote, sellQuote, type ContractRead, type Regime } from "./market";
 import { TARGETS, targetById } from "./targets";
 import { canPrestige, prestigeBonuses, rewardForLevel } from "./prestige";
+import { PREMIUM_MINING_MUL, isStarsOnlyItem } from "@/lib/telegram/stars";
 import type {
   AudioSettings,
   Target,
@@ -72,12 +73,28 @@ export const initialState = (): GameState => ({
   brightness: 1.25,
   audio: { muted: false, music: 0.45, sfx: 0.7 },
   guideSeen: false,
+  premium: { expiresAt: null, lastClaimOn: null, syncedAt: 0 },
   prestige: 0,
   prestigeClaimed: [],
   lifetime: { credits: 0, takedowns: 0, intel: 0 },
   log: [],
   nextLineId: 1,
 });
+
+/**
+ * Whether the Operative Pass is currently active. The server is authoritative;
+ * this only reads the last synced expiry so the UI and yield math agree offline.
+ */
+export const isPremiumActive = (s: GameState, now: number = Date.now()): boolean =>
+  s.premium.expiresAt !== null && s.premium.expiresAt > now;
+
+/** UTC day key used for the once-per-day pass drop. */
+export const utcDayKey = (now: number = Date.now()): string =>
+  new Date(now).toISOString().slice(0, 10);
+
+/** A pass holder can claim once per UTC day. */
+export const canClaimDaily = (s: GameState, now: number = Date.now()): boolean =>
+  isPremiumActive(s, now) && s.premium.lastClaimOn !== utcDayKey(now);
 
 const BASE_STATS: RigStats = {
   crack: 0.28,
@@ -118,6 +135,7 @@ export const deriveStats = (s: GameState): RigStats => {
   const pb = prestigeBonuses(s);
   out.bounty += pb.bounty;
   out.miningMul *= pb.miningMul;
+  if (isPremiumActive(s)) out.miningMul *= PREMIUM_MINING_MUL;
   out.opSlots += pb.opSlots;
   out.crack += pb.crack;
   out.dissipation += pb.dissipation;
@@ -145,6 +163,7 @@ export const miningMulBreakdown = (s: GameState): { label: string; mul: number }
   });
   const pb = prestigeBonuses(s);
   if (pb.miningMul !== 1) out.push({ label: `Prestige ${s.prestige}`, mul: pb.miningMul });
+  if (isPremiumActive(s)) out.push({ label: "Operative Pass", mul: PREMIUM_MINING_MUL });
   return out;
 };
 
@@ -380,6 +399,8 @@ export type Action =
   | { type: "buy"; id: string }
   | { type: "install"; id: string }
   | { type: "grant-credits"; amount: number; reason: string }
+  | { type: "grant-items"; ids: readonly string[]; reason: string }
+  | { type: "premium-sync"; expiresAt: number | null; lastClaimOn: string | null; at: number }
   | { type: "scrub" }
   | { type: "mining-coin"; coin: Coin }
   | { type: "mining-unit"; id: string; delta: number }
@@ -548,6 +569,9 @@ export const reducer = (s: GameState, a: Action): GameState => {
     case "buy": {
       const it = itemById(a.id);
       if (!it) return s;
+      // Stars-exclusive goods have no credit price and must never be bought with credits.
+      if (isStarsOnlyItem(a.id) && !s.owned.includes(a.id))
+        return pushLog(s, `${it.name} is only available through Telegram Stars.`, "warn");
       if (!it.stackable && s.owned.includes(a.id)) return s;
       if (s.credits < it.price) return pushLog(s, "Insufficient credits.", "warn");
       let next: GameState = {
@@ -580,6 +604,41 @@ export const reducer = (s: GameState, a: Action): GameState => {
         "ok",
       );
     }
+    /** Fulfilment of a server-verified Stars purchase. Never called from raw UI. */
+    case "grant-items": {
+      const items = a.ids.map(itemById).filter((i): i is Item => !!i);
+      if (items.length === 0) return s;
+      let next: GameState = {
+        ...s,
+        owned: [...new Set([...s.owned, ...items.map((i) => i.id)])],
+      };
+      items.forEach((it) => {
+        if (it.category === "mining" && it.mining && it.mining.kind !== "contract") {
+          next = {
+            ...next,
+            mining: {
+              ...next.mining,
+              units: { ...next.mining.units, [it.id]: (next.mining.units[it.id] ?? 0) + 1 },
+            },
+          };
+        }
+        if (it.slot) next = { ...next, installed: { ...next.installed, [it.slot]: it.id } };
+      });
+      return pushLog(next, `${a.reason} — ${items.map((i) => i.name).join(", ")} unlocked.`, "ok");
+    }
+    case "premium-sync": {
+      const wasActive = isPremiumActive(s, a.at);
+      const next: GameState = {
+        ...s,
+        premium: { expiresAt: a.expiresAt, lastClaimOn: a.lastClaimOn, syncedAt: a.at },
+      };
+      const nowActive = isPremiumActive(next, a.at);
+      if (nowActive && !wasActive)
+        return pushLog(next, "Operative Pass active — +50% mining yield and a daily credit drop.", "ok");
+      if (!nowActive && wasActive) return pushLog(next, "Operative Pass expired.", "warn");
+      return next;
+    }
+
     case "install": {
       const it = itemById(a.id);
       if (!it?.slot || !s.owned.includes(a.id)) return s;
@@ -682,6 +741,7 @@ export const reducer = (s: GameState, a: Action): GameState => {
         prestige: sv.prestige ?? 0,
         prestigeClaimed: sv.prestigeClaimed ?? [],
         lifetime: { ...base.lifetime, ...(sv.lifetime ?? {}) },
+        premium: { ...base.premium, ...(sv.premium ?? {}) },
       };
     }
     case "prestige": {
@@ -689,8 +749,11 @@ export const reducer = (s: GameState, a: Action): GameState => {
       const level = s.prestige + 1;
       const reward = rewardForLevel(level);
       const base = initialState();
+      // Stars-exclusive goods are paid for, so they are never taken by a prestige reset.
+      const keptStarsItems = s.owned.filter(isStarsOnlyItem);
       let next: GameState = {
         ...base,
+        owned: Array.from(new Set([...base.owned, ...keptStarsItems])),
         phase: s.phase,
         tab: s.tab,
         operator: s.operator,
@@ -698,6 +761,8 @@ export const reducer = (s: GameState, a: Action): GameState => {
         brightness: s.brightness,
         audio: s.audio,
         guideSeen: s.guideSeen,
+        // paid entitlements survive prestige
+        premium: s.premium,
         log: s.log,
         nextLineId: s.nextLineId,
         prestige: level,
@@ -723,8 +788,9 @@ export const reducer = (s: GameState, a: Action): GameState => {
   }
 };
 
+/** Items merchandised in the credit shop. Stars-exclusive goods are excluded. */
 export const shopItems = (cat: Item["category"]): Item[] =>
-  CATALOG.filter((i) => i.category === cat);
+  CATALOG.filter((i) => i.category === cat && !isStarsOnlyItem(i.id));
 
 export const ownedSlotItems = (s: GameState, slot: Slot): Item[] =>
   CATALOG.filter((i) => i.slot === slot && s.owned.includes(i.id));

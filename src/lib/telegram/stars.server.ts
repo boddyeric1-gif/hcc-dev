@@ -24,7 +24,11 @@ export async function createInvoiceLink(product: StarProduct, telegramUserId: nu
   });
 }
 
-/** Records a completed Stars payment. Returns false when the charge was already recorded. */
+/**
+ * Records a completed Stars payment and, for subscriptions, extends the pass.
+ * Rewards always come from the server-side product table, never from the update
+ * payload. Returns false when the charge was already recorded (Telegram retry).
+ */
 export async function recordStarPayment(input: {
   chargeId: string;
   providerChargeId: string | null;
@@ -34,6 +38,7 @@ export async function recordStarPayment(input: {
 }): Promise<boolean> {
   const product = starProductById(input.productId);
   if (!product) return false;
+  const kind = product.days > 0 ? "subscription" : product.itemIds.length > 0 ? "items" : "credits";
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { error } = await supabaseAdmin.from("star_purchases").insert({
     telegram_payment_charge_id: input.chargeId,
@@ -42,6 +47,9 @@ export async function recordStarPayment(input: {
     product_id: product.id,
     stars: input.stars,
     credits: product.credits,
+    kind,
+    item_ids: [...product.itemIds],
+    sub_days: product.days,
   });
   if (error) {
     // 23505 = unique violation: Telegram redelivered an update we already handled.
@@ -49,22 +57,97 @@ export async function recordStarPayment(input: {
     console.error(`Failed to record star payment: ${error.message}`);
     throw new Error("Could not record payment");
   }
+
+  if (product.days > 0) {
+    const { error: subError } = await supabaseAdmin.rpc("hcc_grant_premium", {
+      _user_id: input.telegramUserId,
+      _days: product.days,
+    });
+    if (subError) {
+      console.error(`Failed to grant premium pass: ${subError.message}`);
+      throw new Error("Could not activate pass");
+    }
+  }
   return true;
 }
 
-/** Atomically claims every unclaimed purchase for a user and returns the credits owed. */
-export async function claimCreditsFor(telegramUserId: number): Promise<{ credits: number; purchases: number }> {
+export type PremiumSnapshot = {
+  /** epoch ms, or null when the user has never held a pass */
+  expiresAt: number | null;
+  /** UTC date string of the last claimed daily drop */
+  lastClaimOn: string | null;
+  /** server clock, so the client can reason about drift */
+  now: number;
+};
+
+async function readPremium(telegramUserId: number): Promise<PremiumSnapshot> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("premium_pass")
+    .select("expires_at, last_claim_on")
+    .eq("telegram_user_id", telegramUserId)
+    .maybeSingle();
+  if (error) {
+    console.error(`Failed to read premium pass: ${error.message}`);
+    throw new Error("Could not read pass");
+  }
+  return {
+    expiresAt: data?.expires_at ? Date.parse(data.expires_at) : null,
+    lastClaimOn: data?.last_claim_on ?? null,
+    now: Date.now(),
+  };
+}
+
+export type ClaimResult = {
+  credits: number;
+  itemIds: string[];
+  purchases: number;
+  premium: PremiumSnapshot;
+};
+
+/**
+ * Atomically claims every unclaimed purchase for a user, returning the credits
+ * and item unlocks owed. Claiming marks the rows so a replay grants nothing.
+ */
+export async function claimCreditsFor(telegramUserId: number): Promise<ClaimResult> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("star_purchases")
     .update({ claimed_at: new Date().toISOString() })
     .eq("telegram_user_id", telegramUserId)
     .is("claimed_at", null)
-    .select("credits");
+    .select("credits, item_ids");
   if (error) {
     console.error(`Failed to claim star credits: ${error.message}`);
     throw new Error("Could not claim credits");
   }
   const rows = data ?? [];
-  return { credits: rows.reduce((sum, r) => sum + r.credits, 0), purchases: rows.length };
+  const itemIds = [...new Set(rows.flatMap((r) => r.item_ids ?? []))];
+  return {
+    credits: rows.reduce((sum, r) => sum + r.credits, 0),
+    itemIds,
+    purchases: rows.length,
+    premium: await readPremium(telegramUserId),
+  };
+}
+
+/** Server-authoritative pass state for a verified Telegram user. */
+export async function premiumStatusFor(telegramUserId: number): Promise<PremiumSnapshot> {
+  return readPremium(telegramUserId);
+}
+
+/**
+ * Claims the once-per-UTC-day pass drop. The database function performs the
+ * date check and the write in one statement, so double taps grant nothing.
+ */
+export async function claimDailyFor(
+  telegramUserId: number,
+): Promise<{ credits: number; premium: PremiumSnapshot }> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin.rpc("hcc_claim_daily", { _user_id: telegramUserId });
+  if (error) {
+    console.error(`Failed to claim daily drop: ${error.message}`);
+    throw new Error("Could not claim daily drop");
+  }
+  return { credits: Number(data ?? 0), premium: await readPremium(telegramUserId) };
 }

@@ -110,6 +110,15 @@ export const CATALOG: readonly Item[] = [
 
   { id: "pow-5", name: "Reactor Interconnect", category: "mining", tier: 5, price: 120000, blurb: "900 kW straight off the bus. Nothing throttles.", mining: { kind: "contract", hash: 0, watts: 0, heat: 0, capacityKw: 900, pricePerKwh: 0.03, peakMul: 1, offPeakMul: 1, overageMul: 1.8, switchFee: 18000, demandPerKw: 3.1 }, rank: 4 },
 
+  // ── Stars-tier equipment ────────────────────────────────────────────────
+  // Sold through the premium shop. Dual-priced: buyable with credits too, at a
+  // grind price calibrated against endgame farm output.
+  { id: "gpu-x", name: "TITAN ERIS-X Blacksite Core", category: "hardware", slot: "gpu", tier: 5, price: 4_500_000, blurb: "Stars-tier silicon. There are eleven of these.", stats: { crack: 0.32, miningMul: 2.2 }, rank: 4 },
+  { id: "min-quantum", name: "QUANTUM LATTICE ASIC", category: "mining", tier: 5, price: 2_000_000, blurb: "Stars-tier miner. Coherence-locked, absurdly fast.", stackable: true, mining: { kind: "asic", hash: 9800, watts: 24000, heat: 60 }, rank: 4 },
+  { id: "min-zeropoint", name: "ZERO-POINT THERMAL SINK", category: "mining", tier: 5, price: 1_200_000, blurb: "Stars-tier cooling. The room gets colder as the farm grows.", stackable: true, mining: { kind: "cooler", hash: 0, watts: 1500, heat: -1200 }, rank: 4 },
+  { id: "tool-oracle", name: "Oracle Mesh Array", category: "tools", tier: 5, price: 6_000_000, blurb: "Stars-tier tooling. Two more channels and near-instant sweeps.", stats: { opSlots: 2, scan: 2.2, crack: 0.08 }, rank: 4 },
+  { id: "perk-immunity", name: "Diplomatic Immunity", category: "perks", tier: 5, price: 5_000_000, blurb: "Stars-tier perk. Bounties pay double and nothing sticks to you.", stats: { bounty: 1, failHeatMul: 0.4, dissipation: 25 }, rank: 4 },
+
   // ── customization ───────────────────────────────────────────────────────
   { id: "light-cyan", name: "Lighting — Ice Cyan", category: "custom", slot: "lighting", tier: 1, price: 240, blurb: "Cold light on brushed aluminium." },
   { id: "light-crimson", name: "Lighting — Crimson Alert", category: "custom", slot: "lighting", tier: 1, price: 240, blurb: "The room looks like a warning." },
@@ -119,7 +128,42 @@ export const CATALOG: readonly Item[] = [
   { id: "mat-2", name: "Deskmat — Circuit Map", category: "custom", slot: "deskmat", tier: 2, price: 320, blurb: "A city seen from orbit." },
   { id: "post-1", name: "Poster — Rain City", category: "custom", slot: "poster", tier: 1, price: 180, blurb: "Neon on wet asphalt." },
   { id: "post-2", name: "Poster — Cascade", category: "custom", slot: "poster", tier: 2, price: 400, blurb: "Falling glyphs. You know the one." },
+
+  // rig themes — restyle the whole workspace render
+  { id: "rig-theme-blacksite", name: "Rig Theme — Blacksite", category: "custom", slot: "rigTheme", tier: 1, price: 0, blurb: "Matte black walls, cold cyan architecture. The default posture." },
+  { id: "rig-theme-deepweb", name: "Rig Theme — Deep Web", category: "custom", slot: "rigTheme", tier: 1, price: 1800, blurb: "Phosphor green bleeding out of every seam." },
+  { id: "rig-theme-corporate", name: "Rig Theme — Corporate Ghost", category: "custom", slot: "rigTheme", tier: 2, price: 4200, blurb: "Clean grey and white. Looks like nothing illegal happens here." },
+  { id: "rig-theme-redline", name: "Rig Theme — Redline", category: "custom", slot: "rigTheme", tier: 2, price: 4800, blurb: "Everything is an alert. You stop noticing." },
+  { id: "rig-theme-quantum", name: "Rig Theme — Quantum Lab", category: "custom", slot: "rigTheme", tier: 3, price: 12000, blurb: "Clinical blue. Filtered air you can almost smell.", rank: 2 },
+  { id: "rig-theme-cyberpunk", name: "Rig Theme — Cyberpunk", category: "custom", slot: "rigTheme", tier: 3, price: 15000, blurb: "Amber and magenta on wet violet.", rank: 2 },
+  { id: "rig-theme-neon", name: "Rig Theme — Neon Network", category: "custom", slot: "rigTheme", tier: 4, price: 0, blurb: "Stars-exclusive. Magenta grid lighting throughout." },
+  { id: "rig-theme-classified", name: "Rig Theme — Classified", category: "custom", slot: "rigTheme", tier: 5, price: 0, blurb: "Stars-exclusive. Redacted black and warning amber." },
+
+  // miner finishes — restyle every unit in the farm render
+  { id: "miner-theme-industrial", name: "Miner Finish — Industrial", category: "custom", slot: "minerTheme", tier: 1, price: 0, blurb: "Bare steel and amber status LEDs." },
+  { id: "miner-theme-tactical", name: "Miner Finish — Tactical", category: "custom", slot: "minerTheme", tier: 1, price: 2200, blurb: "Olive drab chassis, low-vis green indicators." },
+  { id: "miner-theme-blacksite", name: "Miner Finish — Blacksite", category: "custom", slot: "minerTheme", tier: 2, price: 6400, blurb: "Anodised black with cyan telemetry." },
+  { id: "miner-theme-quantum", name: "Miner Finish — Quantum", category: "custom", slot: "minerTheme", tier: 3, price: 16500, blurb: "Mirror-polished deep blue. Reflects the whole room.", rank: 2 },
+  { id: "miner-theme-neon", name: "Miner Finish — Neon", category: "custom", slot: "minerTheme", tier: 4, price: 0, blurb: "Stars-exclusive. Magenta-lit violet shells." },
+  { id: "miner-theme-experimental", name: "Miner Finish — Experimental", category: "custom", slot: "minerTheme", tier: 5, price: 0, blurb: "Stars-exclusive. Chrome and impossible teal." },
+
+  // HUD themes — retint the console itself
+  { id: "ui-theme-terminal", name: "HUD Theme — Terminal", category: "custom", slot: "uiTheme", tier: 1, price: 0, blurb: "Stock H.C.C console colours." },
+  { id: "ui-theme-darkgrid", name: "HUD Theme — Dark Grid", category: "custom", slot: "uiTheme", tier: 1, price: 1500, blurb: "Desaturated, low-glare. Easier on a long night." },
+  { id: "ui-theme-blacksite", name: "HUD Theme — Blacksite", category: "custom", slot: "uiTheme", tier: 2, price: 5200, blurb: "Task-force issue. Colder cyan, warmer amber." },
+  { id: "ui-theme-cyberops", name: "HUD Theme — Cyber Ops", category: "custom", slot: "uiTheme", tier: 4, price: 0, blurb: "Stars-exclusive. Magenta command palette." },
+  { id: "ui-theme-classified", name: "HUD Theme — Classified", category: "custom", slot: "uiTheme", tier: 5, price: 0, blurb: "Stars-exclusive. Warning amber across the whole console." },
+
+  // operation badges — worn in the console header
+  { id: "badge-rookie", name: "Badge — Rookie", category: "custom", slot: "badge", tier: 1, price: 0, blurb: "Everyone starts here." },
+  { id: "badge-operator", name: "Badge — Operator", category: "custom", slot: "badge", tier: 1, price: 900, blurb: "You have filed a dossier that stuck." },
+  { id: "badge-specialist", name: "Badge — Specialist", category: "custom", slot: "badge", tier: 2, price: 3600, blurb: "Called in for the ones nobody else can close." },
+  { id: "badge-ghost", name: "Badge — Ghost", category: "custom", slot: "badge", tier: 3, price: 11000, blurb: "No record of you exists in any system.", rank: 2 },
+  { id: "badge-blacksite", name: "Badge — Blacksite", category: "custom", slot: "badge", tier: 4, price: 34000, blurb: "Clearance that is not written down anywhere.", rank: 3 },
+  { id: "badge-elite", name: "Badge — Elite", category: "custom", slot: "badge", tier: 5, price: 120000, blurb: "Top of the board. Everyone knows the handle.", rank: 4 },
+  { id: "badge-apex", name: "Badge — Apex", category: "custom", slot: "badge", tier: 5, price: 0, blurb: "Stars-exclusive. There is no rank above this." },
 ];
+
 
 export const itemById = (id: string | undefined | null): Item | undefined =>
   CATALOG.find((i) => i.id === id);
@@ -137,6 +181,10 @@ export const DEFAULT_INSTALLED: Partial<Record<Slot, string>> = {
   router: "rt-1",
   lighting: "light-cyan",
   deskmat: "mat-1",
+  rigTheme: "rig-theme-blacksite",
+  minerTheme: "miner-theme-industrial",
+  uiTheme: "ui-theme-terminal",
+  badge: "badge-rookie",
 };
 
 export const STARTER_OWNED: readonly string[] = [
@@ -158,6 +206,10 @@ export const SLOT_LABEL: Record<Slot, string> = {
   lighting: "Lighting",
   deskmat: "Deskmat",
   poster: "Wall art",
+  rigTheme: "Rig theme",
+  minerTheme: "Miner finish",
+  uiTheme: "HUD theme",
+  badge: "Badge",
 };
 
 export const COINS: Record<Coin, { name: string; perHash: number; base: number; vol: number }> = {

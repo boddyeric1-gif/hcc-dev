@@ -14,15 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      premium_pass: {
+        Row: {
+          created_at: string
+          expires_at: string
+          last_claim_on: string | null
+          telegram_user_id: number
+          total_days_purchased: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          last_claim_on?: string | null
+          telegram_user_id: number
+          total_days_purchased?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          last_claim_on?: string | null
+          telegram_user_id?: number
+          total_days_purchased?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       star_purchases: {
         Row: {
           claimed_at: string | null
           created_at: string
           credits: number
           id: string
+          item_ids: string[]
+          kind: string
           product_id: string
           provider_payment_charge_id: string | null
           stars: number
+          sub_days: number
           telegram_payment_charge_id: string
           telegram_user_id: number
         }
@@ -31,9 +61,12 @@ export type Database = {
           created_at?: string
           credits: number
           id?: string
+          item_ids?: string[]
+          kind?: string
           product_id: string
           provider_payment_charge_id?: string | null
           stars: number
+          sub_days?: number
           telegram_payment_charge_id: string
           telegram_user_id: number
         }
@@ -42,9 +75,12 @@ export type Database = {
           created_at?: string
           credits?: number
           id?: string
+          item_ids?: string[]
+          kind?: string
           product_id?: string
           provider_payment_charge_id?: string | null
           stars?: number
+          sub_days?: number
           telegram_payment_charge_id?: string
           telegram_user_id?: number
         }
@@ -55,7 +91,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      hcc_claim_daily: { Args: { _user_id: number }; Returns: boolean }
+      hcc_grant_premium: {
+        Args: { _days: number; _user_id: number }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
