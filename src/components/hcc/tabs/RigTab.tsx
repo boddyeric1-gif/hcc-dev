@@ -7,6 +7,7 @@ import type { RigVisual } from "../three/RigScene";
 import { useGame, useStats } from "@/lib/hcc/store";
 import { LIGHT_HEX, SLOT_LABEL, itemById } from "@/lib/hcc/catalog";
 import { ownedSlotItems } from "@/lib/hcc/state";
+import { rigTheme } from "@/lib/hcc/themes";
 import type { Quality, Slot } from "@/lib/hcc/types";
 import { cn } from "@/lib/utils";
 
