@@ -55,7 +55,7 @@ export const GUIDE: readonly GuideChapter[] = [
       },
       {
         title: "Channel limit",
-        body: "You start with one channel. Engaging past your limit forces the OLDEST case to go cold — it loses every piece of evidence you had collected. Release deliberately instead.",
+        body: "You start with one channel. When every channel is full, engaging is refused rather than silently dropping a case — release one from the ACTIVE CHANNELS board first. Each channel keeps its own evidence, so switching between cases never loses progress.",
       },
       {
         title: "More channels",
@@ -215,6 +215,34 @@ export const GUIDE: readonly GuideChapter[] = [
         title: "Suggested order",
         body: "Cooling and crack first (they make cases winnable), then a second channel, then mining scale. Cosmetics last.",
       },
+    ],
+  },
+  {
+    id: "prestige",
+    title: "0X — Prestige",
+    tagline: "Sealing the career and restarting stronger.",
+    tab: "command",
+    steps: [
+      {
+        title: "When it unlocks",
+        body: "Prestige becomes available once you hold enough intel, takedowns and credits at once. The bar on the COMMAND deck shows exactly how far off you are; requirements rise each level.",
+      },
+      {
+        title: "What resets",
+        body: "Credits, coins, owned and installed hardware, miners, heat, case progress and rank intel all reset to a fresh desk.",
+      },
+      {
+        title: "What is kept",
+        body: "Your prestige level and its permanent bonuses, milestone titles, operator handle, settings, and your lifetime career record.",
+      },
+      {
+        title: "The payoff",
+        body: "Every level adds +2% bounty and +2% mining yield permanently. Every fifth level pays a milestone: extra channels, crack power, stealth, and a large restart grant so the rebuild is fast, not punishing.",
+      },
+    ],
+    rules: [
+      "The confirm dialog lists reset and kept items before anything happens — nothing prestiges by accident.",
+      "Prestige is optional. Late-game earnings scale faster with the multipliers than without them.",
     ],
   },
   {
