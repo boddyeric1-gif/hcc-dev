@@ -46,6 +46,23 @@ export const CATALOG: readonly Item[] = [
   { id: "rt-2", name: "Hardened Relay Box", category: "hardware", slot: "router", tier: 2, price: 1500, blurb: "Seven hops before your traffic exists.", stats: { dissipation: 5 } },
   { id: "rt-3", name: "Multi-WAN Ghost Relay", category: "hardware", slot: "router", tier: 3, price: 4800, blurb: "Rotates exit paths mid-session.", stats: { dissipation: 11 }, rank: 3 },
 
+  { id: "cpu-5", name: "Xeon VOIDCORE 192C", category: "hardware", slot: "cpu", tier: 5, price: 39000, blurb: "A rack's worth of threads under one lid.", stats: { crack: 0.34, scan: 4.4 }, rank: 4 },
+  { id: "gpu-5", name: "TITAN ERIS 256", category: "hardware", slot: "gpu", tier: 5, price: 52000, blurb: "Prototype silicon with no consumer driver.", stats: { crack: 0.26, miningMul: 1.85 }, rank: 4 },
+  { id: "ram-4", name: "1TB DDR5 RDIMM", category: "hardware", slot: "ram", tier: 4, price: 12800, blurb: "The whole leak, resident.", stats: { scan: 3.4, crack: 0.11 }, rank: 3 },
+  { id: "ram-5", name: "2TB CXL Memory Pool", category: "hardware", slot: "ram", tier: 5, price: 31000, blurb: "Memory that behaves like storage used to.", stats: { scan: 4.6, crack: 0.15 }, rank: 4 },
+  { id: "sto-4", name: "64TB NVMe Vault", category: "hardware", slot: "storage", tier: 4, price: 11400, blurb: "Every archive, mirrored twice.", stats: { scan: 2.6, dissipation: 5 }, rank: 3 },
+  { id: "sto-5", name: "256TB Blacksite Array", category: "hardware", slot: "storage", tier: 5, price: 28500, blurb: "Self-shredding on the wrong key.", stats: { scan: 3.8, dissipation: 9 }, rank: 4 },
+  { id: "cool-5", name: "Cryo Immersion Bay", category: "hardware", slot: "cooling", tier: 5, price: 26000, blurb: "The rig lives in fluid. It never sweats.", stats: { dissipation: 30, coolingWatts: 4200 }, rank: 4 },
+  { id: "psu-4", name: "3200W Redundant Pair", category: "hardware", slot: "psu", tier: 4, price: 7400, blurb: "Two supplies, one uninterrupted night.", stats: { miningMul: 1.18 }, rank: 3 },
+  { id: "psu-5", name: "Substation Rectifier", category: "hardware", slot: "psu", tier: 5, price: 19800, blurb: "Grid-side conversion. Almost nothing is lost.", stats: { miningMul: 1.26 }, rank: 4 },
+  { id: "mon-5", name: "Wraparound Wall Array", category: "hardware", slot: "monitors", tier: 5, price: 24500, blurb: "The network surrounds you, literally.", stats: { scan: 4.8, crack: 0.14 }, rank: 4 },
+  { id: "desk-4", name: "Faraday Command Console", category: "hardware", slot: "desk", tier: 4, price: 8600, blurb: "Shielded shell, nothing leaks out of the room.", stats: { dissipation: 6 }, rank: 3 },
+  { id: "desk-5", name: "Blacksite Operations Pod", category: "hardware", slot: "desk", tier: 5, price: 22000, blurb: "A workstation you could survive a siege in.", stats: { dissipation: 11, scan: 0.8 }, rank: 4 },
+  { id: "chair-4", name: "Zero-G Operator Seat", category: "hardware", slot: "chair", tier: 4, price: 6200, blurb: "Sessions stop ending because your back does.", stats: { crack: 0.08 }, rank: 3 },
+  { id: "chair-5", name: "Neural Posture Rig", category: "hardware", slot: "chair", tier: 5, price: 15400, blurb: "It adjusts before you notice you needed it.", stats: { crack: 0.11, scan: 0.5 }, rank: 4 },
+  { id: "rt-4", name: "Satellite Uplink Relay", category: "hardware", slot: "router", tier: 4, price: 12600, blurb: "Your traffic leaves the continent first.", stats: { dissipation: 18 }, rank: 3 },
+  { id: "rt-5", name: "Phantom Mesh Backbone", category: "hardware", slot: "router", tier: 5, price: 29500, blurb: "A hundred exits, none of them yours.", stats: { dissipation: 28 }, rank: 4 },
+
   // ── field tools ─────────────────────────────────────────────────────────
   { id: "tool-crack", name: "Cracker Suite v2", category: "tools", tier: 2, price: 1600, blurb: "Better dictionaries, better guesses.", stats: { crack: 0.1 } },
   { id: "tool-crack3", name: "Cracker Suite v3", category: "tools", tier: 3, price: 5200, blurb: "GPU-assisted rotation attacks.", stats: { crack: 0.16 }, rank: 3 },
@@ -56,13 +73,18 @@ export const CATALOG: readonly Item[] = [
   { id: "tool-orches", name: "Op Orchestrator", category: "tools", tier: 3, price: 9800, blurb: "A third parallel channel, scheduled and logged.", stats: { opSlots: 1, scan: 0.8 }, rank: 2 },
   { id: "tool-swarm", name: "Swarm Controller", category: "tools", tier: 4, price: 21000, blurb: "Two more channels. Four cases, one operator.", stats: { opSlots: 2, crack: 0.04 }, rank: 3 },
 
+  { id: "tool-hive", name: "Hive Mesh Controller", category: "tools", tier: 5, price: 46000, blurb: "A fifth channel and faster sweeps across all of them.", stats: { opSlots: 1, scan: 1.4, crack: 0.05 }, rank: 4 },
+
   // ── perks ───────────────────────────────────────────────────────────────
-  { id: "perk-cold", name: "Cold Hands", category: "perks", tier: 2, price: 2400, blurb: "Failed operations cost half the usual heat.", stats: { dissipation: 10 } },
+  { id: "perk-cold", name: "Cold Hands", category: "perks", tier: 2, price: 2400, blurb: "Failed operations cost half the usual heat.", stats: { failHeatMul: 0.5 } },
   { id: "perk-fence", name: "Fence Contact", category: "perks", tier: 2, price: 3000, blurb: "Bounties pay 20% more on delivery.", stats: { bounty: 0.2 } },
   { id: "perk-insider", name: "Agency Insider", category: "perks", tier: 3, price: 6500, blurb: "Bounties pay 45% more. Do not ask her name.", stats: { bounty: 0.45 }, rank: 3 },
-  { id: "perk-thermal", name: "Thermal Discipline", category: "perks", tier: 3, price: 5800, blurb: "Mining hardware runs 25% cooler.", stats: { coolingWatts: 800 }, rank: 2 },
+  { id: "perk-thermal", name: "Thermal Discipline", category: "perks", tier: 3, price: 5800, blurb: "Mining hardware runs 25% cooler.", stats: { miningHeatMul: 0.75 }, rank: 2 },
   { id: "perk-quant", name: "Quant Instinct", category: "perks", tier: 4, price: 11000, blurb: "Mining yield up 30%. You feel the market.", stats: { miningMul: 1.3 }, rank: 4 },
   { id: "perk-taskforce", name: "Task Force Liaison", category: "perks", tier: 4, price: 16500, blurb: "One more parallel case and warmer bounties.", stats: { opSlots: 1, bounty: 0.15 }, rank: 4 },
+
+  { id: "perk-ghost", name: "Ghost Protocol", category: "perks", tier: 5, price: 42000, blurb: "Failures barely register and traces cool on their own.", stats: { failHeatMul: 0.5, dissipation: 18 }, rank: 4 },
+  { id: "perk-cartel", name: "Cartel Broker", category: "perks", tier: 5, price: 58000, blurb: "Bounties pay 70% more and the farm runs 20% hotter on yield.", stats: { bounty: 0.7, miningMul: 1.2 }, rank: 4 },
 
   // ── mining hardware ─────────────────────────────────────────────────────
   { id: "min-shelf", name: "Steel Mining Shelf", category: "mining", tier: 1, price: 450, blurb: "Holds six units off the floor.", stackable: true, mining: { kind: "shelf", hash: 0, watts: 0, heat: 0, slots: 6 } },
@@ -71,15 +93,22 @@ export const CATALOG: readonly Item[] = [
   { id: "min-asic1", name: "ASIC S19 Pro", category: "mining", tier: 2, price: 4800, blurb: "A hairdryer that prints. Loud.", stackable: true, mining: { kind: "asic", hash: 240, watts: 3050, heat: 26 } },
   { id: "min-asic2", name: "ASIC S23 Hydro", category: "mining", tier: 3, price: 15400, blurb: "Water-cooled, rack-mounted, relentless.", stackable: true, mining: { kind: "asic", hash: 720, watts: 5300, heat: 30 }, rank: 3 },
   { id: "min-asic3", name: "ASIC BLACKSITE XM", category: "mining", tier: 4, price: 38000, blurb: "Immersion tank included. Do not open it.", stackable: true, mining: { kind: "asic", hash: 2100, watts: 11000, heat: 42 }, rank: 4 },
+  { id: "min-gpu3", name: "GPU Rig — 12× 5090", category: "mining", tier: 3, price: 18900, blurb: "A wall of fans on a welded frame.", stackable: true, mining: { kind: "gpu", hash: 430, watts: 4200, heat: 27 }, rank: 3 },
+  { id: "min-asic4", name: "ASIC OBSIDIAN TITAN", category: "mining", tier: 5, price: 96000, blurb: "Substation-grade. Ships on a pallet.", stackable: true, mining: { kind: "asic", hash: 5800, watts: 26000, heat: 74 }, rank: 4 },
+  { id: "min-shelf2", name: "Datacentre Rack Frame", category: "mining", tier: 3, price: 3600, blurb: "Twenty slots, hot-aisle ready.", stackable: true, mining: { kind: "shelf", hash: 0, watts: 0, heat: 0, slots: 20 }, rank: 2 },
   { id: "min-fan", name: "Industrial Wall Fan", category: "mining", tier: 1, price: 380, blurb: "Moves the hot air somewhere else.", stackable: true, mining: { kind: "cooler", hash: 0, watts: 90, heat: -14 } },
   { id: "min-ac", name: "Ducted AC Unit", category: "mining", tier: 2, price: 2400, blurb: "Actual refrigeration for the room.", stackable: true, mining: { kind: "cooler", hash: 0, watts: 420, heat: -48 } },
   { id: "min-immersion", name: "Immersion Cooling Tank", category: "mining", tier: 4, price: 12800, blurb: "Dielectric fluid, silent, absurd.", stackable: true, mining: { kind: "cooler", hash: 0, watts: 300, heat: -140 }, rank: 3 },
+
+  { id: "min-cryo", name: "Cryogenic Loop Plant", category: "mining", tier: 5, price: 44000, blurb: "Industrial refrigeration for an industrial problem.", stackable: true, mining: { kind: "cooler", hash: 0, watts: 900, heat: -420 }, rank: 4 },
 
   // ── power contracts ─────────────────────────────────────────────────────
   { id: "pow-1", name: "Residential Meter", category: "mining", tier: 1, price: 0, blurb: "7 kW ceiling, brutal peak pricing, no exit fee.", mining: { kind: "contract", hash: 0, watts: 0, heat: 0, capacityKw: 7, pricePerKwh: 0.34, peakMul: 1.9, offPeakMul: 0.9, overageMul: 3.5, switchFee: 0, demandPerKw: 0 } },
   { id: "pow-2", name: "Small Business Line", category: "mining", tier: 2, price: 3200, blurb: "22 kW, flatter peak curve, small exit fee.", mining: { kind: "contract", hash: 0, watts: 0, heat: 0, capacityKw: 22, pricePerKwh: 0.21, peakMul: 1.45, offPeakMul: 0.82, overageMul: 3, switchFee: 400, demandPerKw: 0.4 } },
   { id: "pow-3", name: "Industrial Feed", category: "mining", tier: 3, price: 11500, blurb: "80 kW. Demand charges, gentle peaks.", mining: { kind: "contract", hash: 0, watts: 0, heat: 0, capacityKw: 80, pricePerKwh: 0.12, peakMul: 1.2, offPeakMul: 0.75, overageMul: 2.4, switchFee: 1800, demandPerKw: 1.2 }, rank: 3 },
   { id: "pow-4", name: "Hydro Substation Lease", category: "mining", tier: 4, price: 34000, blurb: "250 kW of meltwater. Flat rate, heavy exit fee.", mining: { kind: "contract", hash: 0, watts: 0, heat: 0, capacityKw: 250, pricePerKwh: 0.05, peakMul: 1.05, offPeakMul: 0.95, overageMul: 2, switchFee: 6000, demandPerKw: 2.2 }, rank: 4 },
+
+  { id: "pow-5", name: "Reactor Interconnect", category: "mining", tier: 5, price: 120000, blurb: "900 kW straight off the bus. Nothing throttles.", mining: { kind: "contract", hash: 0, watts: 0, heat: 0, capacityKw: 900, pricePerKwh: 0.03, peakMul: 1, offPeakMul: 1, overageMul: 1.8, switchFee: 18000, demandPerKw: 3.1 }, rank: 4 },
 
   // ── customization ───────────────────────────────────────────────────────
   { id: "light-cyan", name: "Lighting — Ice Cyan", category: "custom", slot: "lighting", tier: 1, price: 240, blurb: "Cold light on brushed aluminium." },
