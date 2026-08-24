@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -9,6 +10,11 @@ import {
 } from "react";
 
 import { audio } from "./audio";
+import { itemById } from "./catalog";
+import { sellQuote } from "./market";
+import { rewardForLevel } from "./prestige";
+import { findTarget } from "./state";
+import { useWallet } from "./useWallet";
 import { generateTarget } from "./generator";
 import { activeNews } from "./news";
 import {
@@ -36,6 +42,91 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
   const stateRef = useRef(state);
   stateRef.current = state;
+  const wallet = useWallet();
+  const linked = useRef(false);
+
+  const sync = useCallback((balance: number | null) => {
+    if (balance === null) return;
+    dispatch({ type: "wallet-sync", balance, at: Date.now() });
+  }, []);
+
+  /**
+   * Link the local save to the backend ledger once per session. The first link
+   * imports the pre-ledger balance (clamped, once ever); afterwards the server
+   * balance simply replaces whatever the device thinks it has.
+   */
+  useEffect(() => {
+    if (!wallet.enabled || linked.current || state.phase === "offline") return;
+    linked.current = true;
+    void wallet.link(stateRef.current.credits).then((acc) => {
+      if (!acc) {
+        linked.current = false;
+        return;
+      }
+      dispatch({ type: "wallet-mode", mode: "server" });
+      dispatch({
+        type: "wallet-sync",
+        balance: acc.balance,
+        owned: acc.owned,
+        prestige: acc.prestige,
+        at: Date.now(),
+      });
+    });
+  }, [wallet, state.phase]);
+
+  /**
+   * Optimistic local reducer first, then the authoritative server mutation.
+   * The server's balance always wins, so a tampered client only ever sees its
+   * own number for a moment.
+   */
+  const send = useCallback(
+    (a: Action) => {
+      const before = stateRef.current;
+      dispatch(a);
+      if (before.wallet.mode !== "server") return;
+      switch (a.type) {
+        case "buy": {
+          const it = itemById(a.id);
+          if (!it || it.price <= 0 || before.credits < it.price) return;
+          void wallet.buy(a.id).then(sync);
+          return;
+        }
+        case "report": {
+          const t = findTarget(before, a.targetId);
+          const p = before.progress[a.targetId];
+          if (!t || !p || p.seized || p.evidence.length < t.ops.length) return;
+          const payout = Math.round(t.bounty * (1 + deriveStats(before).bounty));
+          void wallet.bounty(a.targetId, payout).then(sync);
+          return;
+        }
+        case "sell": {
+          const amount = before.mining.balances[a.coin];
+          if (amount <= 0) return;
+          void wallet.sell(a.coin, Math.round(sellQuote(a.coin, a.at, amount).gross)).then(sync);
+          return;
+        }
+        case "scrub": {
+          if (before.credits < 600) return;
+          void wallet.spend(600, "scrub").then(sync);
+          return;
+        }
+        case "mining-contract": {
+          const fee = itemById(before.mining.contract)?.mining?.switchFee ?? 0;
+          if (fee <= 0 || fee > before.credits) return;
+          void wallet.spend(fee, "contract-switch").then(sync);
+          return;
+        }
+        case "prestige": {
+          const level = before.prestige + 1;
+          void wallet.prestige(level, rewardForLevel(level)?.effect.grant ?? 0).then(sync);
+          return;
+        }
+        default:
+          return;
+      }
+    },
+    [wallet, sync],
+  );
 
   // restore
   useEffect(() => {
@@ -124,7 +215,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(timer);
   }, [state.phase]);
 
-  const value = useMemo(() => ({ state, dispatch }), [state]);
+  const value = useMemo(() => ({ state, dispatch: send }), [state, send]);
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }
 
