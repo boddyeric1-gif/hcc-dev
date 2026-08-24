@@ -62,15 +62,17 @@ describe("stars catalog", () => {
 
   it("sells a 30-day Operative Pass", () => {
     const pass = STAR_PRODUCTS.find((p) => p.section === "pass");
-    expect(pass?.subDays).toBe(30);
+    expect(pass?.days).toBe(30);
   });
 
-  it("round-trips invoice payloads and rejects buyer mismatches", () => {
+  it("round-trips invoice payloads and rejects malformed ones", () => {
     const payload = buildInvoicePayload("hcc_credits_100k", 42);
-    expect(parseInvoicePayload(payload, 42)?.productId).toBe("hcc_credits_100k");
-    expect(parseInvoicePayload(payload, 43)).toBeNull();
-    expect(parseInvoicePayload("garbage", 42)).toBeNull();
+    const parsed = parseInvoicePayload(payload);
+    expect(parsed?.productId).toBe("hcc_credits_100k");
+    expect(parsed?.telegramUserId).toBe(42);
+    expect(parseInvoicePayload("garbage")).toBeNull();
   });
+
 
   it("marks Stars-exclusive items and exposes dual pricing where offered", () => {
     const dual = STAR_PRODUCTS.find((p) => p.itemIds?.length && dualPriceFor(p.itemIds[0]!));
