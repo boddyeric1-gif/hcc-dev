@@ -9,6 +9,7 @@ import { COINS, CATALOG, LIGHT_HEX, itemById } from "@/lib/hcc/catalog";
 import { deriveMining, unitAllocation } from "@/lib/hcc/state";
 import { priceHistory, sellQuote } from "@/lib/hcc/market";
 import { activeNews, recentNews } from "@/lib/hcc/news";
+import { minerTheme } from "@/lib/hcc/themes";
 import type { Coin } from "@/lib/hcc/types";
 import { cn } from "@/lib/utils";
 
