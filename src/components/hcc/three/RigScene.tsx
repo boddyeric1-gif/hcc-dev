@@ -323,7 +323,7 @@ export default function RigScene({
       target={[0, 1.0, -0.35]}
       floor={24}
     >
-      <Room accent={v.accent} />
+      <Room accent={v.accent} theme={theme} />
       <Desk tier={v.desk} accent={v.accent} mat={v.deskmat} />
       {monitors.map((m, i) => (
         <Monitor key={i} position={m.p} rotation={m.r} size={m.s} tex={m.t} accent={v.accent} />
@@ -331,17 +331,34 @@ export default function RigScene({
       <Tower gpu={v.gpu} cooling={v.cooling} accent={v.accent} load={v.load} />
       <Peripherals accent={v.accent} />
       <Chair tier={v.chair} />
-      <Rack tier={v.storage} accent={v.accent} />
+      <Rack tier={v.storage} accent={v.accent} theme={theme} />
       <Poster tier={v.poster} accent={v.accent} />
       <spotLight
         position={[0, 3.2, 1.2]}
         angle={0.55}
         penumbra={1}
         intensity={12}
-        color="#9fd8ff"
+        color={theme.key}
         castShadow={quality !== "performance"}
         shadow-mapSize={[1024, 1024]}
       />
+      {/* T5 cryo column: only appears once the workspace is running elite silicon. */}
+      {v.gpu >= 5 && (
+        <group position={[1.95, 0, -1.5]}>
+          <mesh position={[0, 0.9, 0]} castShadow>
+            <cylinderGeometry args={[0.22, 0.22, 1.8, 24]} />
+            <meshPhysicalMaterial
+              color={theme.glow}
+              transmission={0.82}
+              thickness={0.5}
+              roughness={0.06}
+              transparent
+              opacity={0.55}
+            />
+          </mesh>
+          <pointLight position={[0, 1.1, 0.3]} intensity={6} distance={3.2} color={theme.glow} />
+        </group>
+      )}
     </SceneFrame>
   );
 }
