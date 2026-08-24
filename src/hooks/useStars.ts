@@ -47,7 +47,9 @@ export function useStars() {
     try {
       const result = await claim({ data: { initData } });
       syncPremium(result.premium);
-      if (result.credits > 0)
+      if (result.balance !== null)
+        dispatch({ type: "wallet-sync", balance: result.balance, at: Date.now() });
+      else if (result.credits > 0)
         dispatch({ type: "grant-credits", amount: result.credits, reason: "Telegram Stars purchase" });
       if (result.itemIds.length > 0)
         dispatch({ type: "grant-items", ids: result.itemIds, reason: "Telegram Stars purchase" });
@@ -124,7 +126,10 @@ export function useStars() {
       const result = await daily({ data: { initData } });
       syncPremium(result.premium);
       if (result.credits > 0) {
-        dispatch({ type: "grant-credits", amount: result.credits, reason: "Operative Pass daily drop" });
+        if (result.balance !== null)
+          dispatch({ type: "wallet-sync", balance: result.balance, at: Date.now() });
+        else
+          dispatch({ type: "grant-credits", amount: result.credits, reason: "Operative Pass daily drop" });
         setMessage(`Daily drop claimed — ${result.credits.toLocaleString()} cr.`);
       } else {
         setMessage("Today's drop has already been claimed.");
