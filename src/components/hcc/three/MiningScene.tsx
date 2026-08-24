@@ -5,6 +5,7 @@ import * as THREE from "three";
 
 import SceneFrame from "./SceneFrame";
 import LightShafts from "./Volumetrics";
+import { DEFAULT_MINER_THEME, type MinerTheme } from "@/lib/hcc/themes";
 import type { Quality } from "@/lib/hcc/types";
 
 export type MiningVisual = {
@@ -15,6 +16,8 @@ export type MiningVisual = {
   heatRatio: number;
   online: boolean;
   accent: string;
+  /** cosmetic palette; purely visual */
+  theme?: MinerTheme;
 };
 
 function Fan({ position, speed, size = 0.22 }: { position: [number, number, number]; speed: number; size?: number }) {
