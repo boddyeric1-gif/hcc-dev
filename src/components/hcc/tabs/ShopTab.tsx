@@ -53,7 +53,7 @@ export default function ShopTab() {
         </div>
       </Panel>
 
-      <StarTestPurchase />
+      <StarsShop />
 
       <div className="grid gap-3 sm:grid-cols-2">
         {items.map((it) => {
