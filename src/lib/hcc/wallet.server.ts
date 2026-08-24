@@ -37,7 +37,7 @@ export type AccountSnapshot = {
 type ApplyResult = {
   applied: boolean;
   duplicate?: boolean;
-  reason?: string;
+  reason?: string | undefined;
   amount?: number;
   balance: number;
 };
@@ -154,7 +154,7 @@ export async function migrateLegacyBalance(
 export async function purchaseItem(
   telegramUserId: number,
   itemId: string,
-): Promise<{ ok: boolean; reason?: string; balance: number; owned: string[] }> {
+): Promise<{ ok: boolean; reason?: string | undefined; balance: number; owned: string[] }> {
   const item = itemById(itemId);
   if (!item) fail("purchase", `unknown item ${itemId}`);
   if (!(item!.price > 0)) {
