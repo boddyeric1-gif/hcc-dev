@@ -62,7 +62,9 @@ export default function ShopTab() {
           const afford = state.credits >= it.price;
           const count = state.mining.units[it.id] ?? 0;
           const installed = it.slot ? state.installed[it.slot] === it.id : false;
-          const premium = it.tier >= 4;
+          // Dual-priced goods can be bought here with credits or instantly with Stars.
+          const starDeal = dualPriceFor(it.id);
+          const premium = !!starDeal;
           return (
             <Panel key={it.id} className={cn("p-3", locked && "opacity-55")}>
               <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
