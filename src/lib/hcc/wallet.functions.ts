@@ -5,17 +5,19 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 
-import { authenticateInitData } from "@/lib/telegram/stars.server";
-import {
-  accountFor,
-  migrateLegacyBalance,
-  purchaseItem,
-  settleBounty,
-  settleMiningSale,
-  spendCredits,
-  commitPrestige,
-} from "./wallet.server";
 import type { Coin } from "./types";
+
+/**
+ * Server-only modules are loaded inside handlers: this file is reachable from
+ * the client bundle, and only handler bodies are stripped.
+ */
+const server = async () => {
+  const [{ authenticateInitData }, wallet] = await Promise.all([
+    import("@/lib/telegram/stars.server"),
+    import("./wallet.server"),
+  ]);
+  return { authenticateInitData, ...wallet };
+};
 
 const requireSession = <T extends { initData?: unknown }>(input: T): T => {
   if (typeof input?.initData !== "string" || input.initData.length < 10)
@@ -35,7 +37,10 @@ const requireNumber = (value: unknown, label: string): number => {
 
 export const getWalletAccount = createServerFn({ method: "POST" })
   .inputValidator((input: { initData: string }) => requireSession(input))
-  .handler(async ({ data }) => accountFor(authenticateInitData(data.initData)));
+  .handler(async ({ data }) => {
+    const s = await server();
+    return s.accountFor(s.authenticateInitData(data.initData));
+  });
 
 export const migrateWallet = createServerFn({ method: "POST" })
   .inputValidator((input: { initData: string; claimedBalance: number }) => {
@@ -44,9 +49,10 @@ export const migrateWallet = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ data }) => {
-    const userId = authenticateInitData(data.initData);
-    const result = await migrateLegacyBalance(userId, data.claimedBalance);
-    return { ...result, account: await accountFor(userId) };
+    const s = await server();
+    const userId = s.authenticateInitData(data.initData);
+    const result = await s.migrateLegacyBalance(userId, data.claimedBalance);
+    return { ...result, account: await s.accountFor(userId) };
   });
 
 export const buyWithCredits = createServerFn({ method: "POST" })
@@ -55,7 +61,10 @@ export const buyWithCredits = createServerFn({ method: "POST" })
     requireString(input.itemId, "item");
     return input;
   })
-  .handler(async ({ data }) => purchaseItem(authenticateInitData(data.initData), data.itemId));
+  .handler(async ({ data }) => {
+    const s = await server();
+    return s.purchaseItem(s.authenticateInitData(data.initData), data.itemId);
+  });
 
 export const claimBounty = createServerFn({ method: "POST" })
   .inputValidator((input: { initData: string; targetId: string; claimed: number }) => {
@@ -64,9 +73,10 @@ export const claimBounty = createServerFn({ method: "POST" })
     requireNumber(input.claimed, "claim");
     return input;
   })
-  .handler(async ({ data }) =>
-    settleBounty(authenticateInitData(data.initData), data.targetId, data.claimed),
-  );
+  .handler(async ({ data }) => {
+    const s = await server();
+    return s.settleBounty(s.authenticateInitData(data.initData), data.targetId, data.claimed);
+  });
 
 export const settleSale = createServerFn({ method: "POST" })
   .inputValidator((input: { initData: string; coin: Coin; claimed: number }) => {
@@ -75,9 +85,10 @@ export const settleSale = createServerFn({ method: "POST" })
     requireNumber(input.claimed, "claim");
     return input;
   })
-  .handler(async ({ data }) =>
-    settleMiningSale(authenticateInitData(data.initData), data.coin, data.claimed),
-  );
+  .handler(async ({ data }) => {
+    const s = await server();
+    return s.settleMiningSale(s.authenticateInitData(data.initData), data.coin, data.claimed);
+  });
 
 export const spendFromWallet = createServerFn({ method: "POST" })
   .inputValidator((input: { initData: string; amount: number; reason: string }) => {
@@ -86,9 +97,10 @@ export const spendFromWallet = createServerFn({ method: "POST" })
     requireString(input.reason, "reason");
     return input;
   })
-  .handler(async ({ data }) =>
-    spendCredits(authenticateInitData(data.initData), data.amount, data.reason),
-  );
+  .handler(async ({ data }) => {
+    const s = await server();
+    return s.spendCredits(s.authenticateInitData(data.initData), data.amount, data.reason);
+  });
 
 export const commitPrestigeLevel = createServerFn({ method: "POST" })
   .inputValidator((input: { initData: string; level: number; grant: number }) => {
@@ -97,6 +109,7 @@ export const commitPrestigeLevel = createServerFn({ method: "POST" })
     requireNumber(input.grant, "grant");
     return input;
   })
-  .handler(async ({ data }) =>
-    commitPrestige(authenticateInitData(data.initData), data.level, data.grant),
-  );
+  .handler(async ({ data }) => {
+    const s = await server();
+    return s.commitPrestige(s.authenticateInitData(data.initData), data.level, data.grant);
+  });
