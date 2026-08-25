@@ -62,6 +62,8 @@ export const STAR_PRODUCTS: readonly StarProduct[] = [
     section: "credits",
     credits: 100_000_000,
     tagline: "100,000,000 cr per Star",
+    bestValue: true,
+
   }),
   p({
     id: "hcc_credits_100k",
