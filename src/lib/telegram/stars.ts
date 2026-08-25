@@ -98,8 +98,8 @@ export const STAR_PRODUCTS: readonly StarProduct[] = [
     stars: 200,
     section: "credits",
     credits: 1_000_000,
-    tagline: "5,000 cr per Star — 2.5× the 100K drop",
-    bestValue: true,
+    tagline: "5,000 cr per Star — 10× the 100K drop",
+
   }),
 
   // ── operative pass ──────────────────────────────────────────────────────
