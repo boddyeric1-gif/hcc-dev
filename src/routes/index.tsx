@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import ConsoleShell from "@/components/hcc/ConsoleShell";
+import ConsoleShell, { RESERVED_START_PARAMS } from "@/components/hcc/ConsoleShell";
+import { AnalyticsProvider } from "@/lib/analytics/useAnalytics";
 import { GameProvider } from "@/lib/hcc/store";
 
 export const Route = createFileRoute("/")({
@@ -27,8 +28,10 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   return (
-    <GameProvider>
-      <ConsoleShell />
-    </GameProvider>
+    <AnalyticsProvider reservedStartParams={RESERVED_START_PARAMS}>
+      <GameProvider>
+        <ConsoleShell />
+      </GameProvider>
+    </AnalyticsProvider>
   );
 }
