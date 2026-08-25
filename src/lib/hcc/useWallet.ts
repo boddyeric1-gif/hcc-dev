@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 
 import { useTelegram } from "@/hooks/useTelegram";
+import { useAnalytics } from "@/lib/analytics/useAnalytics";
 import {
   buyWithCredits,
   claimBounty,
@@ -39,6 +40,7 @@ export type WalletBridge = {
  */
 export function useWallet(): WalletBridge {
   const { initData } = useTelegram();
+  const track = useAnalytics();
   const [ready, setReady] = useState(false);
   const enabled = initData.length > 10;
   const initRef = useRef(initData);
@@ -64,10 +66,11 @@ export function useWallet(): WalletBridge {
         return await run(id);
       } catch (err) {
         console.error("[wallet]", err);
+        track("server_sync_error", { reason: "wallet" });
         return null;
       }
     },
-    [],
+    [track],
   );
 
   const link = useCallback(
