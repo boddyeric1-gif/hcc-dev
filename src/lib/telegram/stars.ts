@@ -55,17 +55,6 @@ export const STAR_PRODUCTS: readonly StarProduct[] = [
 
   // ── credit drops ────────────────────────────────────────────────────────
   p({
-    id: "hcc_credits_100m",
-    title: "100M CREDIT VAULT",
-    description: "100,000,000 H.C.C credits cleared into the account for a single Star.",
-    stars: 1,
-    section: "credits",
-    credits: 100_000_000,
-    tagline: "100,000,000 cr per Star",
-    bestValue: true,
-
-  }),
-  p({
     id: "hcc_credits_100k",
     title: "100K CREDIT DROP",
     description: "An emergency wire of 100,000 H.C.C credits.",
