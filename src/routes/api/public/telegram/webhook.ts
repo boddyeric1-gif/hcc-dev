@@ -77,6 +77,13 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
               stars: payment.total_amount ?? product.stars,
             });
             if (recorded) {
+              const { recordPurchase } = await import("@/lib/analytics/analytics.server");
+              await recordPurchase({
+                telegramUserId: parsed.telegramUserId,
+                productId: product.id,
+                stars: payment.total_amount ?? product.stars,
+                kind: product.days > 0 ? "subscription" : product.itemIds.length > 0 ? "items" : "credits",
+              });
               await callBotApi(botToken, "sendMessage", {
                 chat_id: chatId,
                 text: `Payment confirmed. ${product.credits.toLocaleString("en-US")} credits are waiting — open H.C.C and they will be applied automatically.`,

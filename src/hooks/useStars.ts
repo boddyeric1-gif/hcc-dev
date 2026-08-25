@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 
 import { getTelegramWebApp, useTelegram } from "@/hooks/useTelegram";
 import { useGame } from "@/lib/hcc/store";
+import { useAnalytics } from "@/lib/analytics/useAnalytics";
 import {
   claimDailyDrop,
   claimStarCredits,
@@ -22,6 +23,7 @@ export type StarsStatus = "idle" | "working" | "confirming" | "error";
  */
 export function useStars() {
   const { dispatch } = useGame();
+  const track = useAnalytics();
   const { isTelegram, initData } = useTelegram();
   const [status, setStatus] = useState<StarsStatus>("idle");
   const [message, setMessage] = useState<string | null>(null);
@@ -79,10 +81,13 @@ export function useStars() {
       setStatus("working");
       setPendingId(productId);
       setMessage(null);
+      // intent only — the completed-purchase event is emitted server-side
+      track("stars_purchase_started", { product_id: productId, stars: product.stars });
       try {
         const { url } = await invoice({ data: { initData, productId } });
         app.openInvoice(url, (paymentStatus) => {
           if (paymentStatus !== "paid") {
+            track("stars_purchase_failed", { product_id: productId, reason: paymentStatus.slice(0, 32) });
             setStatus("idle");
             setPendingId(null);
             setMessage(paymentStatus === "cancelled" ? "Purchase cancelled." : null);
@@ -112,12 +117,13 @@ export function useStars() {
         });
       } catch (err) {
         console.error(err);
+        track("stars_purchase_failed", { product_id: productId, reason: "invoice_error" });
         setStatus("error");
         setPendingId(null);
         setMessage("Could not open the invoice. Try again.");
       }
     },
-    [claimPending, initData, invoice],
+    [claimPending, initData, invoice, track],
   );
 
   const claimDaily = useCallback(async () => {

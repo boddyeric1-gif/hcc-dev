@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Star } from "lucide-react";
 
 import { Chip, HudButton, Panel } from "./ui";
 import { useStars } from "@/hooks/useStars";
+import { useAnalytics } from "@/lib/analytics/useAnalytics";
 import { useGame } from "@/lib/hcc/store";
 import { canClaimDaily, isPremiumActive } from "@/lib/hcc/state";
 import { productsForSection, type StarProduct, type StarSection } from "@/lib/telegram/stars";
@@ -25,6 +26,16 @@ export default function StarsShop() {
   const { isTelegram, ready, status, message, pendingId, buy, claimDaily } = useStars();
   const [section, setSection] = useState<StarSection>("credits");
   const products = useMemo(() => productsForSection(section), [section]);
+  const track = useAnalytics();
+
+  // one event per shop open, and one per product actually shown (deduped)
+  useEffect(() => {
+    if (isTelegram) track("stars_shop_opened", {});
+  }, [isTelegram, track]);
+  useEffect(() => {
+    if (!isTelegram) return;
+    products.forEach((p) => track("stars_product_viewed", { product_id: p.id, stars: p.stars }));
+  }, [isTelegram, products, track]);
 
   const active = isPremiumActive(state);
   const claimable = canClaimDaily(state);

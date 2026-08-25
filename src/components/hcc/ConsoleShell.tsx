@@ -42,6 +42,9 @@ const TABS: { id: TabId; label: string; icon: typeof Cpu }[] = [
 
 const TAB_IDS = new Set<TabId>(TABS.map((t) => t.id));
 
+/** start params that address a console section rather than an ad campaign */
+export const RESERVED_START_PARAMS: ReadonlySet<string> = new Set(TABS.map((t) => String(t.id)));
+
 /** Telegram deep links (/shop, ?startapp=shop) ask the console to open a section. */
 function requestedTab(): TabId | null {
   if (typeof window === "undefined") return null;

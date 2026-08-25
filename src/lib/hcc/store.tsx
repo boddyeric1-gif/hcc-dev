@@ -8,7 +8,12 @@ import {
   useRef,
   type ReactNode,
 } from "react";
+import { useServerFn } from "@tanstack/react-start";
 
+import { useAnalytics } from "@/lib/analytics/useAnalytics";
+import { eventForAction } from "@/lib/analytics/gameplay";
+import { syncPlayerProgress } from "@/lib/analytics/analytics.functions";
+import { useTelegram } from "@/hooks/useTelegram";
 import { audio } from "./audio";
 import { itemById } from "./catalog";
 import { sellQuote } from "./market";
@@ -44,6 +49,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   stateRef.current = state;
   const wallet = useWallet();
   const linked = useRef(false);
+  const track = useAnalytics();
+  const { initData } = useTelegram();
+  const syncProgress = useServerFn(syncPlayerProgress);
 
   const sync = useCallback((balance: number | null) => {
     if (balance === null) return;
@@ -74,6 +82,27 @@ export function GameProvider({ children }: { children: ReactNode }) {
     });
   }, [wallet, state.phase]);
 
+  // cached progression snapshot for reporting; observation only, never credits
+  const rank = rankIndex(state.intel);
+  useEffect(() => {
+    if (!initData) return;
+    const s = stateRef.current;
+    const tierOf = (ids: readonly string[]) =>
+      ids.reduce((max, itemId) => Math.max(max, itemById(itemId)?.tier ?? 1), 1);
+    void syncProgress({
+      data: {
+        initData,
+        rankIndex: rank,
+        prestige: s.prestige,
+        rigTier: tierOf(Object.values(s.installed)),
+        minerTier: tierOf(Object.keys(s.mining.units)),
+        opSlots: Math.max(1, Math.round(deriveStats(s).opSlots)),
+      },
+    }).catch(() => {
+      /* measurement is best effort */
+    });
+  }, [initData, rank, state.prestige, syncProgress]);
+
   /**
    * Optimistic local reducer first, then the authoritative server mutation.
    * The server's balance always wins, so a tampered client only ever sees its
@@ -83,6 +112,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     (a: Action) => {
       const before = stateRef.current;
       dispatch(a);
+      const event = eventForAction(a as unknown as { type: string }, before);
+      if (event) track(event.name, event.props);
       if (before.wallet.mode !== "server") return;
       switch (a.type) {
         case "buy": {
@@ -125,7 +156,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           return;
       }
     },
-    [wallet, sync],
+    [wallet, sync, track],
   );
 
   // restore
