@@ -47,6 +47,14 @@ export default function GuideTab() {
           <Stat label="CHANNELS" value={`${state.active.length}/${Math.max(1, Math.round(stats.opSlots))}`} tone="green" />
           <Stat label="OPEN CASES" value={String(openCases)} tone="amber" />
         </div>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Link to="/admin" className="inline-flex">
+            <HudButton size="sm" tone="ghost" onClick={() => audio.sfx("tab")}>
+              Metrics Console
+            </HudButton>
+          </Link>
+          <span className="text-[10px] text-muted-foreground">Admin-only analytics dashboard.</span>
+        </div>
         <div className="mt-3 flex items-center gap-2 rounded-md border border-border/60 bg-background/40 px-2 py-1.5">
           <Search className="size-3.5 text-muted-foreground" strokeWidth={1.6} />
           <input
