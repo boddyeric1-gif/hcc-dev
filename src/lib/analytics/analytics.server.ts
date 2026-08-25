@@ -36,7 +36,8 @@ export async function startSession(input: SessionStart): Promise<string | null> 
       _source: input.source,
       _campaign: input.campaign,
       _creative: input.creative,
-    });
+      // generated types mark these params non-nullable; the SQL accepts nulls
+    } as never);
     if (error) return swallow("start_session", error.message);
     return typeof data === "string" ? data : null;
   } catch (error) {
@@ -71,7 +72,7 @@ export async function recordEvents(input: {
       _platform: input.platform,
       _app_version: input.appVersion,
       _events: clean,
-    });
+    } as never);
     if (error) {
       swallow("record_events", error.message);
       return 0;
