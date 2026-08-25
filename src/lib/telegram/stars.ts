@@ -6,6 +6,8 @@
  * from this table, never from anything the client sends.
  */
 
+import { LIMITED_TIME_OFFERS } from "./limited-offers";
+
 export type StarSection = "credits" | "pass" | "elite" | "cosmetics" | "test";
 
 export type StarProduct = {
@@ -26,6 +28,8 @@ export type StarProduct = {
   readonly tagline?: string;
   /** highlighted as the standout deal in its section */
   readonly bestValue?: boolean;
+  /** promotional offer, merchandised with a LIMITED TIME badge */
+  readonly limited?: boolean;
   /** kept available for payment verification but not merchandised */
   readonly test?: boolean;
 };
@@ -52,6 +56,9 @@ export const STAR_TEST_PRODUCT: StarProduct = p({
 
 export const STAR_PRODUCTS: readonly StarProduct[] = [
   STAR_TEST_PRODUCT,
+
+  // ── limited-time promos (isolated in ./limited-offers) ──────────────────
+  ...LIMITED_TIME_OFFERS,
 
   // ── credit drops ────────────────────────────────────────────────────────
   p({
