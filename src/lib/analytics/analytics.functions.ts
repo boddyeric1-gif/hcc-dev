@@ -1,3 +1,5 @@
+export type { MetricsSummary } from "./analytics.server";
+
 /**
  * Client-callable analytics RPCs.
  *
