@@ -6,6 +6,7 @@ import { ArrowLeft, RefreshCw } from "lucide-react";
 import { getMetricsSummary, type MetricsSummary } from "@/lib/analytics/analytics.functions";
 import { useTelegram } from "@/hooks/useTelegram";
 import { Panel, Stat, HudButton, Chip } from "@/components/hcc/ui";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
