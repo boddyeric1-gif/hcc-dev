@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      hcc_event: {
+        Row: {
+          app_version: string | null
+          created_at: string
+          id: number
+          name: string
+          platform: string
+          props: Json
+          session_id: string | null
+          telegram_user_id: number | null
+        }
+        Insert: {
+          app_version?: string | null
+          created_at?: string
+          id?: number
+          name: string
+          platform?: string
+          props?: Json
+          session_id?: string | null
+          telegram_user_id?: number | null
+        }
+        Update: {
+          app_version?: string | null
+          created_at?: string
+          id?: number
+          name?: string
+          platform?: string
+          props?: Json
+          session_id?: string | null
+          telegram_user_id?: number | null
+        }
+        Relationships: []
+      }
       hcc_ledger: {
         Row: {
           amount: number
@@ -50,6 +83,78 @@ export type Database = {
           reference?: string | null
           telegram_user_id?: number
           tx_type?: string
+        }
+        Relationships: []
+      }
+      hcc_player: {
+        Row: {
+          acquisition_at: string | null
+          acquisition_campaign: string | null
+          acquisition_creative: string | null
+          acquisition_source: string | null
+          app_version: string | null
+          created_at: string
+          first_purchase_at: string | null
+          first_seen_at: string
+          last_purchase_at: string | null
+          last_seen_at: string
+          miner_tier: number
+          op_slots: number
+          platform: string
+          prestige: number
+          rank_index: number
+          referred_by_player_id: number | null
+          rig_tier: number
+          telegram_user_id: number
+          total_sessions: number
+          total_stars_spent: number
+          updated_at: string
+        }
+        Insert: {
+          acquisition_at?: string | null
+          acquisition_campaign?: string | null
+          acquisition_creative?: string | null
+          acquisition_source?: string | null
+          app_version?: string | null
+          created_at?: string
+          first_purchase_at?: string | null
+          first_seen_at?: string
+          last_purchase_at?: string | null
+          last_seen_at?: string
+          miner_tier?: number
+          op_slots?: number
+          platform?: string
+          prestige?: number
+          rank_index?: number
+          referred_by_player_id?: number | null
+          rig_tier?: number
+          telegram_user_id: number
+          total_sessions?: number
+          total_stars_spent?: number
+          updated_at?: string
+        }
+        Update: {
+          acquisition_at?: string | null
+          acquisition_campaign?: string | null
+          acquisition_creative?: string | null
+          acquisition_source?: string | null
+          app_version?: string | null
+          created_at?: string
+          first_purchase_at?: string | null
+          first_seen_at?: string
+          last_purchase_at?: string | null
+          last_seen_at?: string
+          miner_tier?: number
+          op_slots?: number
+          platform?: string
+          prestige?: number
+          rank_index?: number
+          referred_by_player_id?: number | null
+          rig_tier?: number
+          telegram_user_id?: number
+          total_sessions?: number
+          total_stars_spent?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -104,6 +209,57 @@ export type Database = {
           prestige?: number
           telegram_user_id?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      hcc_progression_milestone: {
+        Row: {
+          milestone: string
+          reached_at: string
+          telegram_user_id: number
+        }
+        Insert: {
+          milestone: string
+          reached_at?: string
+          telegram_user_id: number
+        }
+        Update: {
+          milestone?: string
+          reached_at?: string
+          telegram_user_id?: number
+        }
+        Relationships: []
+      }
+      hcc_session: {
+        Row: {
+          anon_id: string | null
+          app_version: string | null
+          ended_at: string | null
+          id: string
+          platform: string
+          source: string | null
+          started_at: string
+          telegram_user_id: number | null
+        }
+        Insert: {
+          anon_id?: string | null
+          app_version?: string | null
+          ended_at?: string | null
+          id?: string
+          platform?: string
+          source?: string | null
+          started_at?: string
+          telegram_user_id?: number | null
+        }
+        Update: {
+          anon_id?: string | null
+          app_version?: string | null
+          ended_at?: string | null
+          id?: string
+          platform?: string
+          source?: string | null
+          started_at?: string
+          telegram_user_id?: number | null
         }
         Relationships: []
       }
@@ -202,7 +358,44 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      hcc_metrics_daily: {
+        Row: {
+          active_players: number | null
+          day: string | null
+          sessions: number | null
+        }
+        Relationships: []
+      }
+      hcc_metrics_funnel: {
+        Row: {
+          events: number | null
+          players: number | null
+          step: string | null
+        }
+        Relationships: []
+      }
+      hcc_metrics_retention: {
+        Row: {
+          cohort_day: string | null
+          cohort_size: number | null
+          d1: number | null
+          d14: number | null
+          d3: number | null
+          d30: number | null
+          d7: number | null
+        }
+        Relationships: []
+      }
+      hcc_metrics_revenue: {
+        Row: {
+          kind: string | null
+          paying_players: number | null
+          product_id: string | null
+          total_stars: number | null
+          transactions: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       hcc_account: { Args: { _user_id: number }; Returns: Json }
@@ -219,10 +412,15 @@ export type Database = {
         Returns: Json
       }
       hcc_claim_daily: { Args: { _user_id: number }; Returns: boolean }
+      hcc_end_session: { Args: { _session_id: string }; Returns: undefined }
       hcc_ensure_account: { Args: { _user_id: number }; Returns: undefined }
       hcc_grant_premium: {
         Args: { _days: number; _user_id: number }
         Returns: string
+      }
+      hcc_mark_milestone: {
+        Args: { _milestone: string; _user_id: number }
+        Returns: boolean
       }
       hcc_migrate_legacy: {
         Args: {
@@ -251,6 +449,16 @@ export type Database = {
         }
         Returns: Json
       }
+      hcc_record_events: {
+        Args: {
+          _app_version: string
+          _events: Json
+          _platform: string
+          _session_id: string
+          _user_id: number
+        }
+        Returns: number
+      }
       hcc_set_prestige: {
         Args: { _level: number; _user_id: number }
         Returns: number
@@ -264,6 +472,33 @@ export type Database = {
           _user_id: number
         }
         Returns: Json
+      }
+      hcc_start_session: {
+        Args: {
+          _anon_id: string
+          _app_version: string
+          _campaign: string
+          _creative: string
+          _platform: string
+          _source: string
+          _user_id: number
+        }
+        Returns: string
+      }
+      hcc_sync_player_progress: {
+        Args: {
+          _miner_tier: number
+          _op_slots: number
+          _prestige: number
+          _rank_index: number
+          _rig_tier: number
+          _user_id: number
+        }
+        Returns: undefined
+      }
+      hcc_sync_player_purchases: {
+        Args: { _user_id: number }
+        Returns: undefined
       }
     }
     Enums: {
