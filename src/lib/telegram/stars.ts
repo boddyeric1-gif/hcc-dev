@@ -6,6 +6,8 @@
  * from this table, never from anything the client sends.
  */
 
+import { LIMITED_TIME_OFFERS } from "./limited-offers";
+
 export type StarSection = "credits" | "pass" | "elite" | "cosmetics" | "test";
 
 export type StarProduct = {
