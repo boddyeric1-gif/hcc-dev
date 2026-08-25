@@ -47,7 +47,14 @@ function AdminPage() {
   };
 
   useEffect(() => {
-    if (initData) load();
+    if (initData) {
+      load();
+    } else {
+      const timer = window.setTimeout(() => {
+        setError("Open this page inside the Telegram Mini App so your admin ID can be verified.");
+      }, 800);
+      return () => window.clearTimeout(timer);
+    }
   }, [initData]);
 
   return (
