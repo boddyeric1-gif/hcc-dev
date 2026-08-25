@@ -51,10 +51,12 @@ describe("stars catalog", () => {
   });
 
   it("scales credit drops so bigger packs are never worse value per Star", () => {
-    const drops = productsForSection("credits").filter((p) => p.credits > 0).sort(
-      (a, b) => a.stars - b.stars,
-    );
+    // The 1-Star promotional vault is deliberately priced outside the ladder.
+    const drops = productsForSection("credits")
+      .filter((p) => p.credits > 0 && p.id !== "hcc_credits_100m")
+      .sort((a, b) => a.stars - b.stars);
     expect(drops.length).toBeGreaterThanOrEqual(4);
+
     for (let i = 1; i < drops.length; i += 1) {
       const prev = drops[i - 1]!;
       const cur = drops[i]!;
