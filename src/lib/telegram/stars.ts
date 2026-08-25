@@ -27,8 +27,6 @@ export type StarProduct = {
   readonly tagline?: string;
   /** highlighted as the standout deal in its section */
   readonly bestValue?: boolean;
-  /** promotional offer, merchandised with a LIMITED TIME badge */
-  readonly limited?: boolean;
   /** kept available for payment verification but not merchandised */
   readonly test?: boolean;
 };
