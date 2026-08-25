@@ -51,9 +51,8 @@ describe("stars catalog", () => {
   });
 
   it("scales credit drops so bigger packs are never worse value per Star", () => {
-    // Limited-time promos are deliberately better value than the standing ladder.
     const drops = productsForSection("credits")
-      .filter((p) => p.credits > 0 && !p.limited)
+      .filter((p) => p.credits > 0)
       .sort((a, b) => a.stars - b.stars);
     expect(drops.length).toBeGreaterThanOrEqual(4);
 
