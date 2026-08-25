@@ -3,9 +3,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 
-import { getMetricsSummary, type MetricsSummary } from "@/lib/analytics/analytics.functions";
+import { getMetricsSummary } from "@/lib/analytics/analytics.functions";
 import { useTelegram } from "@/hooks/useTelegram";
 import { Panel, Stat, HudButton, Chip } from "@/components/hcc/ui";
+
+type MetricsSummary = Awaited<ReturnType<ReturnType<typeof getMetricsSummary>>>;
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
