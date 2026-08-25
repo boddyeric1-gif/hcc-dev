@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { ChevronRight, Search } from "lucide-react";
 
+import OfficialChannel from "../OfficialChannel";
 import { Chip, HudButton, Panel, Stat } from "../ui";
 import { GUIDE, type GuideChapter } from "@/lib/hcc/guide";
 import { audio } from "@/lib/hcc/audio";
@@ -58,6 +59,8 @@ export default function GuideTab() {
           {done.length}/{GUIDE.length} CHAPTERS READ
         </div>
       </Panel>
+
+      <OfficialChannel />
 
       {chapters.length === 0 && (
         <Panel className="p-4 text-center text-[11px] text-muted-foreground">
