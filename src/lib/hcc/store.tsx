@@ -82,6 +82,27 @@ export function GameProvider({ children }: { children: ReactNode }) {
     });
   }, [wallet, state.phase]);
 
+  // cached progression snapshot for reporting; observation only, never credits
+  const rank = rankIndex(state.intel);
+  useEffect(() => {
+    if (!initData) return;
+    const s = stateRef.current;
+    const tierOf = (ids: readonly string[]) =>
+      ids.reduce((max, itemId) => Math.max(max, itemById(itemId)?.tier ?? 1), 1);
+    void syncProgress({
+      data: {
+        initData,
+        rankIndex: rank,
+        prestige: s.prestige,
+        rigTier: tierOf(Object.values(s.installed)),
+        minerTier: tierOf(Object.keys(s.mining.units)),
+        opSlots: Math.max(1, Math.round(deriveStats(s).opSlots)),
+      },
+    }).catch(() => {
+      /* measurement is best effort */
+    });
+  }, [initData, rank, state.prestige, syncProgress]);
+
   /**
    * Optimistic local reducer first, then the authoritative server mutation.
    * The server's balance always wins, so a tampered client only ever sees its
