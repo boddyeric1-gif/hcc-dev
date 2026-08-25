@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
+import { useTelegram } from "@/hooks/useTelegram";
 import { audio } from "@/lib/hcc/audio";
 
 const LINES = [
@@ -23,19 +24,21 @@ const AUTH_LINES = [
   "granting clearance BLACKSITE / TIER-3",
 ];
 
+const sanitise = (raw: string): string =>
+  raw.replace(/[^a-zA-Z0-9_.-]/g, "").toUpperCase().slice(0, 18);
+
 export default function BootScreen({ onDone }: { onDone: (handle: string) => void }) {
+  const { user } = useTelegram();
   const [shown, setShown] = useState(0);
-  const [stage, setStage] = useState<"boot" | "creds" | "auth">("boot");
-  const [handle, setHandle] = useState("");
-  const [passkey, setPasskey] = useState("");
+  const [stage, setStage] = useState<"boot" | "ready" | "auth">("boot");
   const [authStep, setAuthStep] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const handleRef = useRef<HTMLInputElement>(null);
+
+  const handle = sanitise(user?.username ?? user?.first_name ?? "") || "GHOSTHAND";
 
   useEffect(() => {
     if (stage !== "boot") return;
     if (shown >= LINES.length) {
-      const t = window.setTimeout(() => setStage("creds"), 420);
+      const t = window.setTimeout(() => setStage("ready"), 420);
       return () => window.clearTimeout(t);
     }
     const t = window.setTimeout(() => setShown((s) => s + 1), shown === 0 ? 260 : 150);
@@ -43,13 +46,9 @@ export default function BootScreen({ onDone }: { onDone: (handle: string) => voi
   }, [shown, stage]);
 
   useEffect(() => {
-    if (stage === "creds") handleRef.current?.focus();
-  }, [stage]);
-
-  useEffect(() => {
     if (stage !== "auth") return;
     if (authStep >= AUTH_LINES.length) {
-      const t = window.setTimeout(() => onDone(handle.trim().toUpperCase()), 520);
+      const t = window.setTimeout(() => onDone(handle), 520);
       return () => window.clearTimeout(t);
     }
     const t = window.setTimeout(() => {
@@ -59,30 +58,12 @@ export default function BootScreen({ onDone }: { onDone: (handle: string) => voi
     return () => window.clearTimeout(t);
   }, [stage, authStep, handle, onDone]);
 
-  const submit = () => {
-    const h = handle.trim();
-    if (h.length < 3) {
-      setError("Handle must be at least 3 characters.");
-      audio.sfx("fail");
-      return;
-    }
-    if (passkey.length < 4) {
-      setError("Passkey must be at least 4 characters.");
-      audio.sfx("fail");
-      return;
-    }
-    setError(null);
+  const enter = () => {
     audio.start();
     audio.resume();
     audio.sfx("unlock");
     setStage("auth");
   };
-
-  const glyphs = "▚▞▜▙▟▛◆◇▲▼".split("");
-  const masked = passkey
-    .split("")
-    .map((_, i) => glyphs[(i * 7 + passkey.length) % glyphs.length])
-    .join("");
 
   return (
     <div className="hud-grid relative flex min-h-dvh flex-col items-center justify-center overflow-hidden px-6">
@@ -101,51 +82,11 @@ export default function BootScreen({ onDone }: { onDone: (handle: string) => voi
             </p>
           ))}
 
-          {stage === "creds" && (
-            <div className="mt-4 space-y-2 border-t border-hud-cyan/20 pt-3">
-              <p className="text-hud-cyan/80">// operator credentials required</p>
-              <label className="flex items-center gap-2">
-                <span className="w-[86px] shrink-0 text-muted-foreground">HANDLE:</span>
-                <span className="text-hud-green">&gt;</span>
-                <input
-                  ref={handleRef}
-                  value={handle}
-                  maxLength={18}
-                  onChange={(e) => {
-                    setHandle(e.target.value.replace(/[^a-zA-Z0-9_.-]/g, "").toUpperCase());
-                    audio.sfx("key");
-                  }}
-                  onKeyDown={(e) => e.key === "Enter" && submit()}
-                  placeholder="GHOSTHAND"
-                  className="w-full bg-transparent text-hud-green caret-hud-green outline-none placeholder:text-hud-green/25"
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-              </label>
-              <label className="flex items-center gap-2">
-                <span className="w-[86px] shrink-0 text-muted-foreground">PASSKEY:</span>
-                <span className="text-hud-green">&gt;</span>
-                <div className="relative w-full">
-                  <input
-                    value={passkey}
-                    maxLength={32}
-                    type="password"
-                    onChange={(e) => {
-                      setPasskey(e.target.value);
-                      audio.sfx("key");
-                    }}
-                    onKeyDown={(e) => e.key === "Enter" && submit()}
-                    className="w-full bg-transparent text-transparent caret-hud-green outline-none"
-                    autoComplete="off"
-                  />
-                  <span className="pointer-events-none absolute inset-0 flex items-center tracking-[0.2em] text-hud-cyan">
-                    {masked || <span className="text-hud-green/25">••••••••</span>}
-                  </span>
-                </div>
-              </label>
-              {error && <p className="text-hud-red">{error}</p>}
-              <p className="text-[10px] text-muted-foreground">
-                Local flavour only — nothing is transmitted and there is no account.
+          {stage === "ready" && (
+            <div className="mt-4 space-y-1 border-t border-hud-cyan/20 pt-3">
+              <p className="text-hud-cyan/80">// clearance on file — no credentials required</p>
+              <p className="text-hud-green">
+                OPERATOR: <span className="text-hud-cyan">{handle}</span>
               </p>
             </div>
           )}
@@ -157,9 +98,7 @@ export default function BootScreen({ onDone }: { onDone: (handle: string) => voi
                   {l}
                 </p>
               ))}
-              {authStep >= AUTH_LINES.length && (
-                <p className="text-hud-green">WELCOME, {handle.trim().toUpperCase()}.</p>
-              )}
+              {authStep >= AUTH_LINES.length && <p className="text-hud-green">WELCOME, {handle}.</p>}
             </div>
           )}
 
@@ -170,11 +109,11 @@ export default function BootScreen({ onDone }: { onDone: (handle: string) => voi
 
         <button
           type="button"
-          disabled={stage !== "creds"}
-          onClick={submit}
+          disabled={stage !== "ready"}
+          onClick={enter}
           className="mt-6 w-full rounded-md border border-hud-green/50 bg-hud-green/10 py-3 text-[11px] tracking-[0.3em] text-hud-green uppercase transition-all hover:bg-hud-green/20 disabled:opacity-30 glow-cyan"
         >
-          {stage === "boot" ? "Initialising…" : stage === "creds" ? "Authenticate" : "Granting access…"}
+          {stage === "boot" ? "Initialising…" : stage === "ready" ? "Enter console" : "Granting access…"}
         </button>
       </div>
     </div>
