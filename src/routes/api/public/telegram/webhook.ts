@@ -95,8 +95,15 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           return Response.json({ ok: true });
         }
 
+        // an optional external link (the official channel) is always its own row
+        const linkRow = spec.link ? [[{ text: spec.link.text, url: spec.link.url }]] : [];
+
         if (spec.replyOnly) {
-          await callBotApi(botToken, "sendMessage", { chat_id: chatId, text: spec.text });
+          await callBotApi(botToken, "sendMessage", {
+            chat_id: chatId,
+            text: spec.text,
+            ...(linkRow.length ? { reply_markup: { inline_keyboard: linkRow } } : {}),
+          });
           return Response.json({ ok: true });
         }
 
@@ -107,9 +114,13 @@ export const Route = createFileRoute("/api/public/telegram/webhook")({
           chat_id: chatId,
           text: spec.text,
           reply_markup: {
-            inline_keyboard: [[isPrivate ? { text: spec.button, web_app: { url } } : { text: spec.button, url }]],
+            inline_keyboard: [
+              [isPrivate ? { text: spec.button, web_app: { url } } : { text: spec.button, url }],
+              ...linkRow,
+            ],
           },
         });
+
         return Response.json({ ok: true });
       },
     },

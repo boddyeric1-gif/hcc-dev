@@ -20,6 +20,9 @@ export interface TelegramWebApp {
   ready: () => void;
   expand: () => void;
   openInvoice: (url: string, callback?: (status: string) => void) => void;
+  /** opens a t.me link inside Telegram; absent on very old clients */
+  openTelegramLink?: (url: string) => void;
+
   MainButton: TelegramMainButton;
   initData?: string;
   initDataUnsafe?: { user?: TelegramUser; start_param?: string };

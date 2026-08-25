@@ -1,4 +1,5 @@
 import type { TabId } from "@/lib/hcc/types";
+import { HCC_CHANNEL_LINK, HCC_CHANNEL_SHORT_BUTTON, HCC_CHANNEL_TEXT, HCC_CHANNEL_URL } from "./channel";
 
 export type BotCommand =
   | "start"
@@ -11,6 +12,7 @@ export type BotCommand =
   | "targets"
   | "inventory"
   | "mining"
+  | "community"
   | "paysupport";
 
 export type CommandSpec = {
@@ -25,6 +27,8 @@ export type CommandSpec = {
   readonly button: string;
   /** when true the bot replies with text only — no Mini App launch button */
   readonly replyOnly?: boolean;
+  /** optional extra inline row linking somewhere outside the Mini App */
+  readonly link?: { readonly text: string; readonly url: string };
 };
 
 export const COMMANDS: readonly CommandSpec[] = [
@@ -32,8 +36,11 @@ export const COMMANDS: readonly CommandSpec[] = [
     command: "start",
     description: "Launch H.C.C — Hunting Cyber Criminals",
     tab: "command",
-    text: "H.C.C online. Hunt cyber criminals, build your rig, run the farm.\n\nTap below to open the console.",
+    text:
+      "H.C.C online. Hunt cyber criminals, build your rig, run the farm.\n\nTap below to open the console.\n\n" +
+      "🏢 Official H.C.C. INC. — follow the channel for announcements, updates and community news.",
     button: "Launch H.C.C",
+    link: { text: HCC_CHANNEL_SHORT_BUTTON, url: HCC_CHANNEL_URL },
   },
   {
     command: "play",
@@ -99,6 +106,15 @@ export const COMMANDS: readonly CommandSpec[] = [
     button: "Open mining farm",
   },
   {
+    command: "community",
+    description: "Official H.C.C. INC. channel",
+    tab: "command",
+    text: HCC_CHANNEL_TEXT,
+    button: "Launch H.C.C",
+    replyOnly: true,
+    link: HCC_CHANNEL_LINK,
+  },
+  {
     command: "paysupport",
     description: "Help with Telegram Stars purchases",
     tab: "shop",
@@ -133,4 +149,4 @@ export function miniAppUrl(baseUrl: string, tab: TabId): string {
 }
 
 export const UNKNOWN_COMMAND_TEXT =
-  "Unknown command. Try /play, /help, /shop, /targets, /cases, /inventory, /mining or /paysupport.";
+  "Unknown command. Try /play, /help, /shop, /targets, /cases, /inventory, /mining, /community or /paysupport.";
