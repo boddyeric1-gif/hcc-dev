@@ -57,8 +57,6 @@ export const STAR_TEST_PRODUCT: StarProduct = p({
 export const STAR_PRODUCTS: readonly StarProduct[] = [
   STAR_TEST_PRODUCT,
 
-  // ── limited-time promos (isolated in ./limited-offers) ──────────────────
-  ...LIMITED_TIME_OFFERS,
 
   // ── credit drops ────────────────────────────────────────────────────────
   p({
