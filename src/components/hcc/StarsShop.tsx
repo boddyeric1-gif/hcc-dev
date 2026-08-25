@@ -122,22 +122,12 @@ function StarCard({
     <div
       className={cn(
         "rounded-md border p-2",
-        product.limited
-          ? "border-hud-green/60 bg-hud-green/5"
-          : product.bestValue
-            ? "border-hud-amber/50 bg-hud-amber/5"
-            : "border-border/60 bg-background/40",
+        product.bestValue ? "border-hud-amber/50 bg-hud-amber/5" : "border-border/60 bg-background/40",
       )}
     >
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
         <h3 className="min-w-0 truncate text-sm text-foreground">{product.title}</h3>
-        {product.limited ? (
-          <Chip tone="green">LIMITED TIME</Chip>
-        ) : product.bestValue ? (
-          <Chip tone="amber">BEST VALUE</Chip>
-        ) : owned ? (
-          <Chip tone="green">OWNED</Chip>
-        ) : null}
+        {product.bestValue ? <Chip tone="amber">BEST VALUE</Chip> : owned ? <Chip tone="green">OWNED</Chip> : null}
       </div>
       <p className="mt-1 text-[11px] text-muted-foreground">{product.description}</p>
       {product.tagline && <p className="mt-1 text-[10px] tracking-[0.14em] text-hud-green/80">{product.tagline}</p>}
