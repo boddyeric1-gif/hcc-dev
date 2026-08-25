@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { ChevronRight, Search } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 import OfficialChannel from "../OfficialChannel";
 import { Chip, HudButton, Panel, Stat } from "../ui";
