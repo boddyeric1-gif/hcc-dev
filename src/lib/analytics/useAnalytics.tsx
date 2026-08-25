@@ -112,7 +112,7 @@ export function AnalyticsProvider({
     const attribution: Attribution = parseAttribution(readStartParam(), reservedStartParams);
     void begin({
       data: {
-        initData: initData || undefined,
+        ...(initData ? { initData } : {}),
         anonId: anonId(),
         platform: clientPlatform(),
         appVersion: APP_VERSION,
