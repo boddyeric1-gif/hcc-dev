@@ -8,7 +8,11 @@ import {
   useRef,
   type ReactNode,
 } from "react";
+import { useServerFn } from "@tanstack/react-start";
 
+import { useAnalytics } from "@/lib/analytics/useAnalytics";
+import { syncPlayerProgress } from "@/lib/analytics/analytics.functions";
+import { useTelegram } from "@/hooks/useTelegram";
 import { audio } from "./audio";
 import { itemById } from "./catalog";
 import { sellQuote } from "./market";
@@ -44,6 +48,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   stateRef.current = state;
   const wallet = useWallet();
   const linked = useRef(false);
+  const track = useAnalytics();
+  const { initData } = useTelegram();
+  const syncProgress = useServerFn(syncPlayerProgress);
 
   const sync = useCallback((balance: number | null) => {
     if (balance === null) return;
@@ -83,6 +90,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     (a: Action) => {
       const before = stateRef.current;
       dispatch(a);
+      trackAction(track, before, a);
       if (before.wallet.mode !== "server") return;
       switch (a.type) {
         case "buy": {
