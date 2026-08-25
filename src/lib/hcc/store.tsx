@@ -11,6 +11,7 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 
 import { useAnalytics } from "@/lib/analytics/useAnalytics";
+import { eventForAction } from "@/lib/analytics/gameplay";
 import { syncPlayerProgress } from "@/lib/analytics/analytics.functions";
 import { useTelegram } from "@/hooks/useTelegram";
 import { audio } from "./audio";
@@ -90,7 +91,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
     (a: Action) => {
       const before = stateRef.current;
       dispatch(a);
-      trackAction(track, before, a);
+      const event = eventForAction(a as unknown as { type: string }, before);
+      if (event) track(event.name, event.props);
       if (before.wallet.mode !== "server") return;
       switch (a.type) {
         case "buy": {
@@ -133,7 +135,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           return;
       }
     },
-    [wallet, sync],
+    [wallet, sync, track],
   );
 
   // restore
