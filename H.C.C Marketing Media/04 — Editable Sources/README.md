@@ -2,7 +2,7 @@
 
 Layered and editable project files behind the delivered creative: design source files, video project files, raw gameplay capture, audio stems, fonts, and export presets.
 
-**Status: empty.** No editable sources have been provided yet.
+**Status: raw gameplay footage only.** Four unedited Mini App screen captures are held here — see `RAW FOOTAGE CATALOG.md`. No layered poster or video project files have been provided yet.
 
 ## What to place here when available
 
