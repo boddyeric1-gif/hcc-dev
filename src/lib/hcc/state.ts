@@ -468,6 +468,10 @@ export const reducer = (s: GameState, a: Action): GameState => {
       return { ...s, tab: a.tab };
     case "guide-seen":
       return { ...s, guideSeen: true };
+    case "experience-mode":
+      return s.experienceMode === a.mode ? s : { ...s, experienceMode: a.mode };
+    case "tip-seen":
+      return s.seenTips.includes(a.id) ? s : { ...s, seenTips: [...s.seenTips, a.id] };
     case "select":
       return { ...s, selected: a.id };
     case "engage": {
