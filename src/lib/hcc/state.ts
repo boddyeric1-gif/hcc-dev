@@ -393,6 +393,8 @@ export type Action =
   | { type: "audio"; patch: Partial<AudioSettings> }
   | { type: "tab"; tab: TabId }
   | { type: "guide-seen" }
+  | { type: "experience-mode"; mode: ExperienceMode }
+  | { type: "tip-seen"; id: string }
   | { type: "select"; id: string }
   | { type: "engage"; id: string }
   | { type: "drop"; id: string }
