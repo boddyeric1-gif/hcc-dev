@@ -144,7 +144,6 @@ export default function Onboarding() {
             </HudButton>
           )}
         </div>
-      </div>
-    </div>
+    </>,
   );
 }
