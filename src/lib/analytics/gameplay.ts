@@ -52,6 +52,8 @@ export function eventForAction(action: ActionLike, before: StateLike): Trackable
       };
     case "prestige":
       return { name: "prestige_completed", props: { level: (before.prestige ?? 0) + 1 } };
+    case "experience-mode":
+      return { name: "experience_mode_set", props: { kind: id(action["mode"]) ?? "" } };
     case "guide-seen":
       return { name: "onboarding_completed", props: {} };
     default:

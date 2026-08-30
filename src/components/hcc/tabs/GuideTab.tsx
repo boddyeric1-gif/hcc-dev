@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronRight, Search } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
+import ExperienceModeToggle from "../ExperienceModeToggle";
 import OfficialChannel from "../OfficialChannel";
+import { takeGuideChapter } from "@/lib/hcc/guideFocus";
 import { Chip, HudButton, Panel, Stat } from "../ui";
 import { GUIDE, type GuideChapter } from "@/lib/hcc/guide";
 import { audio } from "@/lib/hcc/audio";
@@ -23,6 +25,12 @@ export default function GuideTab() {
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string>(GUIDE[0]!.id);
   const [done, setDone] = useState<readonly string[]>([]);
+
+  // a contextual tip can ask for a specific chapter when it hands off here
+  useEffect(() => {
+    const requested = takeGuideChapter();
+    if (requested) setOpenId(requested);
+  }, []);
 
   const chapters = useMemo(() => GUIDE.filter((c) => matches(c, query)), [query]);
   const stats = deriveStats(state);
@@ -68,6 +76,8 @@ export default function GuideTab() {
           {done.length}/{GUIDE.length} CHAPTERS READ
         </div>
       </Panel>
+
+      <ExperienceModeToggle />
 
       <OfficialChannel />
 

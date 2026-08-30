@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { X } from "lucide-react";
 
+import ExperienceModeToggle from "./ExperienceModeToggle";
 import { HudButton } from "./ui";
 import { audio } from "@/lib/hcc/audio";
 import { useGame } from "@/lib/hcc/store";
@@ -28,8 +29,11 @@ const CARDS: { title: string; body: string }[] = [
   },
 ];
 
+type Stage = "mode" | "cards" | "ack";
+
 export default function Onboarding() {
   const { dispatch } = useGame();
+  const [stage, setStage] = useState<Stage>("mode");
   const [i, setI] = useState(0);
   const card = CARDS[i]!;
   const last = i === CARDS.length - 1;
@@ -40,7 +44,7 @@ export default function Onboarding() {
     if (openGuide) dispatch({ type: "tab", tab: "guide" });
   };
 
-  return (
+  const frame = (children: ReactNode) => (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-background/85 p-4 backdrop-blur-sm sm:items-center">
       <div className="panel relative w-full max-w-md p-4">
         <button
@@ -51,6 +55,56 @@ export default function Onboarding() {
         >
           <X className="size-4" strokeWidth={1.6} />
         </button>
+        {children}
+      </div>
+    </div>
+  );
+
+  if (stage === "mode") {
+    return frame(
+      <>
+        <div className="text-[10px] tracking-[0.24em] text-hud-green">BRIEFING</div>
+        <h2 className="mt-2 font-display text-xl tracking-widest text-hud-cyan text-glow">
+          HOW MUCH GUIDANCE DO YOU WANT?
+        </h2>
+        <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
+          The game is the same either way. This only changes how much the console explains itself.
+        </p>
+        <div className="mt-3">
+          <ExperienceModeToggle
+            bare
+            onPick={(mode) => setStage(mode === "normal" ? "cards" : "ack")}
+          />
+        </div>
+      </>,
+    );
+  }
+
+  if (stage === "ack") {
+    return frame(
+      <>
+        <div className="text-[10px] tracking-[0.24em] text-hud-green">CLEARANCE CONFIRMED</div>
+        <h2 className="mt-2 font-display text-xl tracking-widest text-hud-cyan text-glow">
+          EXPERIENCED MODE
+        </h2>
+        <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
+          Experienced mode selected — minimal hand-holding. The manual is one tap away in GUIDE
+          whenever you want it.
+        </p>
+        <div className="mt-4 flex justify-between gap-2">
+          <HudButton size="sm" tone="ghost" onClick={() => setStage("mode")}>
+            Back
+          </HudButton>
+          <HudButton size="sm" tone="green" onClick={() => close(false)}>
+            Enter console
+          </HudButton>
+        </div>
+      </>,
+    );
+  }
+
+  return frame(
+    <>
         <div className="text-[10px] tracking-[0.24em] text-hud-green">
           BRIEFING {i + 1}/{CARDS.length}
         </div>
@@ -91,7 +145,6 @@ export default function Onboarding() {
             </HudButton>
           )}
         </div>
-      </div>
-    </div>
+    </>,
   );
 }

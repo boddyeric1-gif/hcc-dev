@@ -5,6 +5,7 @@ import { canPrestige, prestigeBonuses, rewardForLevel } from "./prestige";
 import { PREMIUM_MINING_MUL, isStarsOnlyItem } from "@/lib/telegram/stars";
 import type {
   AudioSettings,
+  ExperienceMode,
   Target,
   Coin,
   GameState,
@@ -73,6 +74,8 @@ export const initialState = (): GameState => ({
   brightness: 1.25,
   audio: { muted: false, music: 0.45, sfx: 0.7 },
   guideSeen: false,
+  experienceMode: "normal",
+  seenTips: [],
   premium: { expiresAt: null, lastClaimOn: null, syncedAt: 0 },
   wallet: { mode: "local", balance: 0, syncedAt: 0, migrated: false, pending: false },
   prestige: 0,
@@ -390,6 +393,8 @@ export type Action =
   | { type: "audio"; patch: Partial<AudioSettings> }
   | { type: "tab"; tab: TabId }
   | { type: "guide-seen" }
+  | { type: "experience-mode"; mode: ExperienceMode }
+  | { type: "tip-seen"; id: string }
   | { type: "select"; id: string }
   | { type: "engage"; id: string }
   | { type: "drop"; id: string }
@@ -463,6 +468,10 @@ export const reducer = (s: GameState, a: Action): GameState => {
       return { ...s, tab: a.tab };
     case "guide-seen":
       return { ...s, guideSeen: true };
+    case "experience-mode":
+      return s.experienceMode === a.mode ? s : { ...s, experienceMode: a.mode };
+    case "tip-seen":
+      return s.seenTips.includes(a.id) ? s : { ...s, seenTips: [...s.seenTips, a.id] };
     case "select":
       return { ...s, selected: a.id };
     case "engage": {
@@ -763,6 +772,10 @@ export const reducer = (s: GameState, a: Action): GameState => {
         lifetime: { ...base.lifetime, ...(sv.lifetime ?? {}) },
         premium: { ...base.premium, ...(sv.premium ?? {}) },
         wallet: { ...base.wallet, ...(sv.wallet ?? {}) },
+        // saves from before experience modes: anyone who finished the old
+        // onboarding is treated as experienced, new devices start guided
+        experienceMode: sv.experienceMode ?? (sv.guideSeen ? "experienced" : "normal"),
+        seenTips: sv.seenTips ?? [],
       };
     }
     case "prestige": {
@@ -782,6 +795,8 @@ export const reducer = (s: GameState, a: Action): GameState => {
         brightness: s.brightness,
         audio: s.audio,
         guideSeen: s.guideSeen,
+        experienceMode: s.experienceMode,
+        seenTips: s.seenTips,
         // paid entitlements survive prestige
         premium: s.premium,
         wallet: s.wallet,
@@ -816,3 +831,25 @@ export const shopItems = (cat: Item["category"]): Item[] =>
 
 export const ownedSlotItems = (s: GameState, slot: Slot): Item[] =>
   CATALOG.filter((i) => i.slot === slot && s.owned.includes(i.id));
+
+/**
+ * Advisory only: what a guided player could sensibly do next. Pure read of
+ * existing state — it never mutates anything and never performs an action.
+ */
+export const nextRecommendedAction = (
+  s: GameState,
+): { label: string; tab: TabId } | null => {
+  if (s.heat > 80) return { label: "Heat is critical — scrub your logs before the trace lands.", tab: "command" };
+  if (s.active.length === 0) return { label: "No case is open. Engage a target to start hunting.", tab: "targets" };
+  const openCase = s.active.find((id) => {
+    const t = findTarget(s, id);
+    const p = s.progress[id];
+    return t && p && !p.seized && p.evidence.length >= t.ops.length;
+  });
+  if (openCase) return { label: "Evidence is at 100% — file the report and collect the bounty.", tab: "case" };
+  const empty = s.active.some((id) => (s.progress[id]?.evidence.length ?? 0) === 0);
+  if (empty) return { label: "Your case has no evidence yet. Run an operation in TOOLS.", tab: "tools" };
+  const units = Object.values(s.mining.units).reduce((a, b) => a + b, 0);
+  if (units === 0 && s.credits > 5000) return { label: "You can afford a miner — mining pays while you work cases.", tab: "mining" };
+  return null;
+};

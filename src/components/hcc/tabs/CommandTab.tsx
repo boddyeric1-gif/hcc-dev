@@ -4,7 +4,14 @@ import EventStream from "../EventStream";
 import PrestigePanel from "../PrestigePanel";
 import { Bar, Chip, HudButton, Panel, Stat } from "../ui";
 import { useGame, useStats } from "@/lib/hcc/store";
-import { allTargets, evidencePct, findTarget, nextRankIntel, rankName } from "@/lib/hcc/state";
+import {
+  allTargets,
+  evidencePct,
+  findTarget,
+  nextRankIntel,
+  nextRecommendedAction,
+  rankName,
+} from "@/lib/hcc/state";
 
 export default function CommandTab() {
   const { state, dispatch } = useGame();
@@ -13,6 +20,7 @@ export default function CommandTab() {
   const roster = allTargets(state);
   const remaining = roster.filter((t) => !state.progress[t.id]?.seized).length;
   const nextIntel = nextRankIntel(state.intel);
+  const next = nextRecommendedAction(state);
   const rankPct = useMemo(() => {
     if (nextIntel === null) return 100;
     return (state.intel / nextIntel) * 100;
@@ -49,6 +57,23 @@ export default function CommandTab() {
           </HudButton>
         </div>
       </Panel>
+
+      {state.experienceMode === "normal" && next && (
+        <Panel label="NEXT MOVE" className="p-3">
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{next.label}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {state.heat > 80 ? (
+              <HudButton size="sm" tone="amber" onClick={() => dispatch({ type: "scrub" })}>
+                Scrub logs · 600 cr
+              </HudButton>
+            ) : (
+              <HudButton size="sm" onClick={() => dispatch({ type: "tab", tab: next.tab })}>
+                Open {next.tab}
+              </HudButton>
+            )}
+          </div>
+        </Panel>
+      )}
 
       <PrestigePanel />
 
