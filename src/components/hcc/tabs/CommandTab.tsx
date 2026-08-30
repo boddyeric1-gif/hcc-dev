@@ -4,7 +4,14 @@ import EventStream from "../EventStream";
 import PrestigePanel from "../PrestigePanel";
 import { Bar, Chip, HudButton, Panel, Stat } from "../ui";
 import { useGame, useStats } from "@/lib/hcc/store";
-import { allTargets, evidencePct, findTarget, nextRankIntel, rankName } from "@/lib/hcc/state";
+import {
+  allTargets,
+  evidencePct,
+  findTarget,
+  nextRankIntel,
+  nextRecommendedAction,
+  rankName,
+} from "@/lib/hcc/state";
 
 export default function CommandTab() {
   const { state, dispatch } = useGame();
