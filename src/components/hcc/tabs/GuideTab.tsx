@@ -26,6 +26,12 @@ export default function GuideTab() {
   const [openId, setOpenId] = useState<string>(GUIDE[0]!.id);
   const [done, setDone] = useState<readonly string[]>([]);
 
+  // a contextual tip can ask for a specific chapter when it hands off here
+  useEffect(() => {
+    const requested = takeGuideChapter();
+    if (requested) setOpenId(requested);
+  }, []);
+
   const chapters = useMemo(() => GUIDE.filter((c) => matches(c, query)), [query]);
   const stats = deriveStats(state);
   const openCases = allTargets(state).filter((t) => !state.progress[t.id]?.seized).length;
