@@ -14,6 +14,7 @@ export const EVENT_NAMES = [
   "onboarding_started",
   "onboarding_completed",
   "guide_opened",
+  "experience_mode_set",
   "first_target_engaged",
   // gameplay
   "tab_viewed",
