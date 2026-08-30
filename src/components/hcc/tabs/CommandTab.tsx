@@ -50,6 +50,23 @@ export default function CommandTab() {
         </div>
       </Panel>
 
+      {state.experienceMode === "normal" && next && (
+        <Panel label="NEXT MOVE" className="p-3">
+          <p className="text-[11px] leading-relaxed text-muted-foreground">{next.label}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {state.heat > 80 ? (
+              <HudButton size="sm" tone="amber" onClick={() => dispatch({ type: "scrub" })}>
+                Scrub logs · 600 cr
+              </HudButton>
+            ) : (
+              <HudButton size="sm" onClick={() => dispatch({ type: "tab", tab: next.tab })}>
+                Open {next.tab}
+              </HudButton>
+            )}
+          </div>
+        </Panel>
+      )}
+
       <PrestigePanel />
 
       {active && (
