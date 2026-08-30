@@ -20,6 +20,7 @@ export default function CommandTab() {
   const roster = allTargets(state);
   const remaining = roster.filter((t) => !state.progress[t.id]?.seized).length;
   const nextIntel = nextRankIntel(state.intel);
+  const next = nextRecommendedAction(state);
   const rankPct = useMemo(() => {
     if (nextIntel === null) return 100;
     return (state.intel / nextIntel) * 100;
