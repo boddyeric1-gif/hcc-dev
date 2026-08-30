@@ -18,7 +18,7 @@ Last updated: 2026-08-30
 | 01 — Campaign Strategy | Positioning, messaging, CTA, creative concepts, channel plan |
 | 02 — Posters | Static poster creative + full catalog metadata |
 | 03 — Video Ads | Video creative + full catalog metadata |
-| 04 — Editable Sources | Project files, layered sources, scripts, raw footage (currently empty) |
+| 04 — Editable Sources | Project files, build scripts, raw gameplay footage, cut specifications |
 | 05 — Brand System | Visual/verbal brand rules for all future marketing |
 | 06 — Performance | Creative test log and results |
 
@@ -44,6 +44,16 @@ Note: no 1080×1350 crop of Poster 1 has been provided yet. Do not fabricate one
 | HCC_Ad_Intercept_1x1_1080x1080.MP4 | 1:1 | 1080×1080 | Square feed cut. |
 | HCC_Ad_Intercept_16x9_1920x1080.mp4 | 16:9 | 1920×1080 | Landscape cut for YouTube/in-stream/desktop placements. |
 
+### Video ads — "Field Proof" (9.5s, in-house, real gameplay)
+
+| Filename | Ratio | Dimensions | Description |
+| --- | --- | --- | --- |
+| HCC_Ad_FieldProof_9x16_1080x1920.mp4 | 9:16 | 1080×1920 | Primary cold-acquisition cut: boot hook → open cases → social-engineering choice → evidence filed → cipher resolved → CTA. All real captured UI. |
+| HCC_Ad_FieldProof_1x1_1080x1080.mp4 | 1:1 | 1080×1080 | Square feed adaptation, reframed per beat. |
+| HCC_Ad_FieldProof_16x9_1920x1080.mp4 | 16:9 | 1920×1080 | Landscape adaptation for YouTube/desktop. |
+
+Timeline, overlays, audio plan and export specs: `04 — Editable Sources/FieldProof v1 Project/CUT SPECIFICATION.md`.
+
 ### Editable sources — raw gameplay footage
 
 Unedited Telegram Mini App screen captures, 1320×2868 portrait, recorded 2026-08-30. Full details in `04 — Editable Sources/RAW FOOTAGE CATALOG.md`.
@@ -55,7 +65,16 @@ Unedited Telegram Mini App screen captures, 1320×2868 portrait, recorded 2026-0
 | HCC_Gameplay_Social_Engineering.mov | 25.4 s | SOCIAL ENGINEERING dialogue exchange, suspicion track. |
 | HCC_Gameplay_Port_Mapper.mov | 32.7 s | PORT MAPPER signal-strength probe grid. |
 
-No layered poster or video project files provided yet.
+### Editable sources — project files
+
+| File | Purpose |
+| --- | --- |
+| FieldProof v1 Project/CUT SPECIFICATION.md | Full timeline, source timestamps, overlays, audio plan, export specs |
+| FieldProof v1 Project/build_9x16.sh | Rebuilds the vertical master from the raw captures |
+| FieldProof v1 Project/build_1x1_16x9.sh | Rebuilds the square and landscape adaptations |
+| FieldProof v1 Project/cta_card.py | Generates the brand end-card frame sequence |
+
+No layered poster project files provided yet.
 
 ## Campaign positioning (canonical copy)
 
