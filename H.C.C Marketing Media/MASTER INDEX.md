@@ -44,9 +44,18 @@ Note: no 1080×1350 crop of Poster 1 has been provided yet. Do not fabricate one
 | HCC_Ad_Intercept_1x1_1080x1080.MP4 | 1:1 | 1080×1080 | Square feed cut. |
 | HCC_Ad_Intercept_16x9_1920x1080.mp4 | 16:9 | 1920×1080 | Landscape cut for YouTube/in-stream/desktop placements. |
 
-### Editable sources
+### Editable sources — raw gameplay footage
 
-None provided yet.
+Unedited Telegram Mini App screen captures, 1320×2868 portrait, recorded 2026-08-30. Full details in `04 — Editable Sources/RAW FOOTAGE CATALOG.md`.
+
+| Filename | Duration | Content |
+| --- | --- | --- |
+| HCC_Gameplay_Boot_Sequence.mov | 21.2 s | Bootloader cold open — wordmark, signature verify, initialising. |
+| HCC_Gameplay_Cipher_Wheel.mov | 29.7 s | CIPHER WHEEL operation against Ironexchange. |
+| HCC_Gameplay_Social_Engineering.mov | 25.4 s | SOCIAL ENGINEERING dialogue exchange, suspicion track. |
+| HCC_Gameplay_Port_Mapper.mov | 32.7 s | PORT MAPPER signal-strength probe grid. |
+
+No layered poster or video project files provided yet.
 
 ## Campaign positioning (canonical copy)
 
