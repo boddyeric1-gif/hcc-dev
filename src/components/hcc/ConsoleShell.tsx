@@ -17,6 +17,7 @@ import BootScreen from "./BootScreen";
 import CaseTab from "./tabs/CaseTab";
 import GuideTab from "./tabs/GuideTab";
 import Onboarding from "./Onboarding";
+import TabTip from "./TabTip";
 import CommandTab from "./tabs/CommandTab";
 import MiningTab from "./tabs/MiningTab";
 import RigTab from "./tabs/RigTab";
