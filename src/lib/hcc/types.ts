@@ -1,5 +1,8 @@
 export type Tone = "sys" | "ok" | "warn" | "bad" | "user" | "dim";
 
+/** guidance level. Presentation only — the underlying game is identical. */
+export type ExperienceMode = "normal" | "experienced";
+
 export type LogLine = {
   readonly id: number;
   readonly stamp: string;
