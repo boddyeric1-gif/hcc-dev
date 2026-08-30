@@ -795,6 +795,8 @@ export const reducer = (s: GameState, a: Action): GameState => {
         brightness: s.brightness,
         audio: s.audio,
         guideSeen: s.guideSeen,
+        experienceMode: s.experienceMode,
+        seenTips: s.seenTips,
         // paid entitlements survive prestige
         premium: s.premium,
         wallet: s.wallet,
