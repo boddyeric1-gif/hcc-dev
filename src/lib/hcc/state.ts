@@ -772,6 +772,10 @@ export const reducer = (s: GameState, a: Action): GameState => {
         lifetime: { ...base.lifetime, ...(sv.lifetime ?? {}) },
         premium: { ...base.premium, ...(sv.premium ?? {}) },
         wallet: { ...base.wallet, ...(sv.wallet ?? {}) },
+        // saves from before experience modes: anyone who finished the old
+        // onboarding is treated as experienced, new devices start guided
+        experienceMode: sv.experienceMode ?? (sv.guideSeen ? "experienced" : "normal"),
+        seenTips: sv.seenTips ?? [],
       };
     }
     case "prestige": {
