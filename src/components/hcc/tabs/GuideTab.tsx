@@ -77,6 +77,8 @@ export default function GuideTab() {
         </div>
       </Panel>
 
+      <ExperienceModeToggle />
+
       <OfficialChannel />
 
       {chapters.length === 0 && (
