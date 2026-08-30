@@ -148,6 +148,7 @@ export default function ConsoleShell() {
       </header>
 
       <main className="pb-console safe-x relative z-10 mx-auto w-full max-w-3xl flex-1 px-3 pt-3">
+        <TabTip />
         {state.tab === "command" && <CommandTab />}
         {state.tab === "targets" && <TargetsTab />}
         {state.tab === "tools" && <ToolsTab />}
