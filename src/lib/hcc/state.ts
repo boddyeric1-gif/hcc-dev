@@ -73,6 +73,8 @@ export const initialState = (): GameState => ({
   brightness: 1.25,
   audio: { muted: false, music: 0.45, sfx: 0.7 },
   guideSeen: false,
+  experienceMode: "normal",
+  seenTips: [],
   premium: { expiresAt: null, lastClaimOn: null, syncedAt: 0 },
   wallet: { mode: "local", balance: 0, syncedAt: 0, migrated: false, pending: false },
   prestige: 0,
