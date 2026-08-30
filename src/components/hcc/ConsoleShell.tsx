@@ -42,11 +42,8 @@ const TABS: { id: TabId; label: string; icon: typeof Cpu }[] = [
 ];
 
 const TAB_IDS = new Set<TabId>(TABS.map((t) => t.id));
-
-/** start params that address a console section rather than an ad campaign */
 export const RESERVED_START_PARAMS: ReadonlySet<string> = new Set(TABS.map((t) => String(t.id)));
 
-/** Telegram deep links (/shop, ?startapp=shop) ask the console to open a section. */
 function requestedTab(): TabId | null {
   if (typeof window === "undefined") return null;
   const fromQuery = new URLSearchParams(window.location.search).get("tab");
@@ -58,8 +55,8 @@ function requestedTab(): TabId | null {
 export default function ConsoleShell() {
   const { state, dispatch } = useGame();
   const online = state.phase === "online";
+  const isPerf = state.quality === "performance";
 
-  // honour a deep-linked section once the console is up
   useEffect(() => {
     if (!online) return;
     const tab = requestedTab();
@@ -67,12 +64,10 @@ export default function ConsoleShell() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [online]);
 
-  // keep the synth engine in sync with saved preferences
   useEffect(() => {
     audio.setSettings(state.audio);
   }, [state.audio]);
 
-  // ambience follows the farm: more units, more load, more heat = louder room
   useEffect(() => {
     if (!online) return;
     const tick = () => {
@@ -91,26 +86,27 @@ export default function ConsoleShell() {
   }, [online, state]);
 
   if (!online) {
-    return (
-      <BootScreen
-        onDone={(handle) => dispatch({ type: "login", handle })}
-      />
-    );
+    return <BootScreen onDone={(handle) => dispatch({ type: "login", handle })} />;
   }
 
   return (
-    <div className="relative flex min-h-dvh flex-col">
-      <div className="pointer-events-none fixed inset-0 hud-grid opacity-40" aria-hidden />
-      <div className="pointer-events-none fixed inset-x-0 top-0 h-32 bg-hud-cyan/5 blur-3xl" aria-hidden />
+    <div className={cn("relative flex min-h-dvh flex-col", isPerf && "perf-mode")}>
+      {/* Atmosphere */}
+      <div className="pointer-events-none fixed inset-0 hud-grid opacity-[0.38]" aria-hidden />
+      <div className="data-dust" aria-hidden />
+      <div className="pointer-events-none fixed inset-x-0 top-0 h-40 bg-hud-cyan/6 blur-3xl" aria-hidden />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-hud-cyan/8 blur-2xl animate-sweep" aria-hidden />
+      <div className="phosphor-bloom" aria-hidden />
+      <div className="crt-overlay" aria-hidden />
 
-      <header className="safe-top sticky top-0 z-20 border-b border-hud-cyan/20 bg-background/85 backdrop-blur-md">
-        <div className="safe-x mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2">
+      <header className="safe-top sticky top-0 z-30 border-b border-hud-cyan/25 bg-background/80 backdrop-blur-xl">
+        <div className="safe-x mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5">
           <div className="flex items-baseline gap-2">
-            <h1 className="font-display text-lg tracking-[0.3em] text-hud-cyan text-glow">
+            <h1 className="font-display text-lg tracking-[0.32em] text-hud-cyan text-glow animate-flicker">
               H.C.C
               <span className="sr-only"> — Hunting Cyber Criminals</span>
             </h1>
-            <span aria-hidden className="hidden text-[9px] tracking-[0.3em] text-muted-foreground sm:inline">
+            <span aria-hidden className="hidden text-[9px] tracking-[0.32em] text-muted-foreground sm:inline">
               HUNTING CYBER CRIMINALS
             </span>
           </div>
@@ -160,7 +156,7 @@ export default function ConsoleShell() {
         {state.tab === "guide" && <GuideTab />}
       </main>
 
-      <nav className="safe-bottom fixed inset-x-0 bottom-0 z-20 border-t border-hud-cyan/20 bg-background/92 backdrop-blur-md">
+      <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-hud-cyan/25 bg-background/90 backdrop-blur-xl">
         <div className="no-scrollbar safe-x mx-auto flex max-w-3xl gap-1 overflow-x-auto px-2 py-1.5">
           {TABS.map((t) => {
             const Icon = t.icon;
@@ -174,10 +170,10 @@ export default function ConsoleShell() {
                   dispatch({ type: "tab", tab: t.id });
                 }}
                 className={cn(
-                  "flex min-w-[52px] flex-1 shrink-0 flex-col items-center gap-0.5 rounded-md border px-2 py-1 transition-colors",
+                  "flex min-w-[52px] flex-1 shrink-0 flex-col items-center gap-0.5 rounded-md border px-2 py-1.5 transition-all duration-200",
                   active
-                    ? "border-hud-cyan/50 bg-hud-cyan/10 text-hud-cyan"
-                    : "border-transparent text-muted-foreground hover:text-foreground",
+                    ? "border-hud-cyan/55 bg-hud-cyan/12 text-hud-cyan shadow-[0_0_18px_-6px] shadow-hud-cyan/30"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/40",
                 )}
               >
                 <Icon className="size-4" strokeWidth={1.6} />

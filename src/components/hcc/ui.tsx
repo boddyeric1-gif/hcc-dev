@@ -1,5 +1,4 @@
 import { type ReactNode } from "react";
-
 import { cn } from "@/lib/utils";
 
 export function Panel({
@@ -16,8 +15,8 @@ export function Panel({
   return (
     <section className={cn("panel relative overflow-hidden", className)}>
       {label && (
-        <header className="flex items-center justify-between border-b border-border/60 px-3 py-2">
-          <h2 className="text-[10px] tracking-[0.22em] text-hud-cyan/80">{label}</h2>
+        <header className="flex items-center justify-between border-b border-hud-cyan/15 px-3 py-2">
+          <h2 className="text-[10px] tracking-[0.24em] text-hud-cyan/90">{label}</h2>
           {right}
         </header>
       )}
@@ -45,10 +44,11 @@ export function Bar({
           : tone === "violet"
             ? "bg-hud-violet"
             : "bg-hud-cyan";
+
   return (
-    <div className={cn("h-1.5 w-full overflow-hidden rounded-full bg-secondary", className)}>
+    <div className={cn("bar-track h-1.5 w-full", className)}>
       <div
-        className={cn("h-full rounded-full transition-[width] duration-500", color)}
+        className={cn("bar-fill", color)}
         style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
       />
     </div>
@@ -101,10 +101,10 @@ export function HudButton({
   size?: "sm" | "md";
 }) {
   const tones: Record<string, string> = {
-    cyan: "border-hud-cyan/45 text-hud-cyan hover:bg-hud-cyan/12",
-    green: "border-hud-green/45 text-hud-green hover:bg-hud-green/12",
-    amber: "border-hud-amber/45 text-hud-amber hover:bg-hud-amber/12",
-    red: "border-hud-red/45 text-hud-red hover:bg-hud-red/12",
+    cyan: "border-hud-cyan/50 text-hud-cyan hover:bg-hud-cyan/15 hover:shadow-[0_0_20px_-6px] hover:shadow-hud-cyan/40",
+    green: "border-hud-green/50 text-hud-green hover:bg-hud-green/15 hover:shadow-[0_0_20px_-6px] hover:shadow-hud-green/40",
+    amber: "border-hud-amber/50 text-hud-amber hover:bg-hud-amber/15",
+    red: "border-hud-red/50 text-hud-red hover:bg-hud-red/15",
     ghost: "border-border text-muted-foreground hover:bg-secondary",
   };
   return (
@@ -113,7 +113,7 @@ export function HudButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "rounded-md border bg-background/40 tracking-[0.14em] uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-35",
+        "rounded-md border bg-background/50 tracking-[0.14em] uppercase transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-35 active:scale-[0.98]",
         size === "sm" ? "px-2.5 py-1 text-[10px]" : "px-3 py-2 text-[11px]",
         tones[tone],
         className,
@@ -124,13 +124,19 @@ export function HudButton({
   );
 }
 
-export function Chip({ children, tone = "dim" }: { children: ReactNode; tone?: "dim" | "cyan" | "green" | "amber" | "red" }) {
+export function Chip({
+  children,
+  tone = "dim",
+}: {
+  children: ReactNode;
+  tone?: "dim" | "cyan" | "green" | "amber" | "red";
+}) {
   const tones: Record<string, string> = {
     dim: "border-border text-muted-foreground",
-    cyan: "border-hud-cyan/40 text-hud-cyan",
-    green: "border-hud-green/40 text-hud-green",
-    amber: "border-hud-amber/40 text-hud-amber",
-    red: "border-hud-red/40 text-hud-red",
+    cyan: "border-hud-cyan/45 text-hud-cyan",
+    green: "border-hud-green/45 text-hud-green",
+    amber: "border-hud-amber/45 text-hud-amber",
+    red: "border-hud-red/45 text-hud-red",
   };
   return (
     <span className={cn("rounded border px-1.5 py-0.5 text-[9px] tracking-[0.16em] uppercase", tones[tone])}>
@@ -163,10 +169,16 @@ export function Sparkline({
       <polyline
         points={`0,100 ${pts.join(" ")} 100,100`}
         fill={stroke}
-        fillOpacity="0.1"
+        fillOpacity="0.12"
         stroke="none"
       />
-      <polyline points={pts.join(" ")} fill="none" stroke={stroke} strokeWidth="1.4" vectorEffect="non-scaling-stroke" />
+      <polyline
+        points={pts.join(" ")}
+        fill="none"
+        stroke={stroke}
+        strokeWidth="1.5"
+        vectorEffect="non-scaling-stroke"
+      />
     </svg>
   );
 }
