@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { X } from "lucide-react";
 
+import ExperienceModeToggle from "./ExperienceModeToggle";
 import { HudButton } from "./ui";
 import { audio } from "@/lib/hcc/audio";
 import { useGame } from "@/lib/hcc/store";
