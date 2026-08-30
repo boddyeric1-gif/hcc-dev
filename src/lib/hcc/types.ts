@@ -177,6 +177,10 @@ export type GameState = {
   readonly brightness: number;
   readonly audio: AudioSettings;
   readonly guideSeen: boolean;
+  /** how much guidance the player wants — presentation only, never mechanics */
+  readonly experienceMode: ExperienceMode;
+  /** contextual tips already dismissed, keyed by guide chapter id */
+  readonly seenTips: readonly string[];
   /** mirror of the server-authoritative Operative Pass state */
   readonly premium: PremiumState;
   /** server-authoritative wallet mirror; local math is optimistic only */
