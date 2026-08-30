@@ -5,6 +5,7 @@ import { canPrestige, prestigeBonuses, rewardForLevel } from "./prestige";
 import { PREMIUM_MINING_MUL, isStarsOnlyItem } from "@/lib/telegram/stars";
 import type {
   AudioSettings,
+  ExperienceMode,
   Target,
   Coin,
   GameState,
