@@ -41,7 +41,7 @@ export default function PortMapper({
     audio.sfx(ports[i]?.live ? "ok" : "click");
   };
 
-  // polar layout around a radar ring
+  // polar layout around a radar ring — same cells/rules as the original grid
   const nodes = ports.map((p, i) => {
     const angle = -Math.PI / 2 + (i / ports.length) * Math.PI * 2;
     const ring = 0.62 + (i % 3) * 0.08;
@@ -56,13 +56,14 @@ export default function PortMapper({
   return (
     <Panel label="PORT MAPPER — PERIMETER" className="p-3">
       <p className="mb-2 text-xs text-muted-foreground">
-        Probe the perimeter of {target.host}. Live services sit at signal{" "}
-        <span className="text-hud-cyan">{map.floor}+</span>. Tap strong nodes, skip the noise.
+        Probe the perimeter of {target.host}. Each port prints its signal strength. A port is live when its
+        signal is <span className="text-hud-cyan">{map.floor} or higher</span> — that&apos;s the whole rule. Tap the
+        strong ones, skip the weak ones.
       </p>
 
       <div className="mb-3 flex flex-wrap gap-2 text-[10px] tracking-[0.16em]">
         <span className="rounded border border-hud-cyan/30 bg-hud-cyan/5 px-2 py-1 text-hud-cyan">
-          FLOOR {map.floor}
+          SIGNAL FLOOR {map.floor}
         </span>
         <span className="rounded border border-border px-2 py-1 text-muted-foreground">
           SERVICES {found}/{diff.liveServices}
@@ -72,7 +73,7 @@ export default function PortMapper({
         </span>
       </div>
 
-      {/* radar */}
+      {/* radar visuals — mechanics match original grid */}
       <div className="relative mx-auto mb-3 aspect-square w-full max-w-[320px]">
         <svg viewBox="0 0 100 100" className="h-full w-full" aria-hidden>
           {[18, 30, 42].map((r) => (
@@ -86,9 +87,22 @@ export default function PortMapper({
               strokeWidth="0.35"
             />
           ))}
-          <line x1="50" y1="8" x2="50" y2="92" stroke="color-mix(in oklch, var(--hud-cyan) 12%, transparent)" strokeWidth="0.3" />
-          <line x1="8" y1="50" x2="92" y2="50" stroke="color-mix(in oklch, var(--hud-cyan) 12%, transparent)" strokeWidth="0.3" />
-          {/* sweeping arm */}
+          <line
+            x1="50"
+            y1="8"
+            x2="50"
+            y2="92"
+            stroke="color-mix(in oklch, var(--hud-cyan) 12%, transparent)"
+            strokeWidth="0.3"
+          />
+          <line
+            x1="8"
+            y1="50"
+            x2="92"
+            y2="50"
+            stroke="color-mix(in oklch, var(--hud-cyan) 12%, transparent)"
+            strokeWidth="0.3"
+          />
           {!win && !out && (
             <line
               x1="50"
@@ -109,6 +123,8 @@ export default function PortMapper({
         {nodes.map(({ i, p, x, y }) => {
           const isOpen = opened.includes(i);
           const isPing = ping === i;
+          // original rule: signal is always readable so you can judge before probing
+          const aboveFloor = p.signal >= map.floor;
           return (
             <button
               key={p.num}
@@ -118,9 +134,16 @@ export default function PortMapper({
               style={{ left: `${x}%`, top: `${y}%` }}
               className={cn(
                 "absolute flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border text-[9px] tabular-nums transition-all duration-300",
-                !isOpen && "border-border/70 bg-background/80 text-muted-foreground hover:border-hud-cyan/60 hover:text-hud-cyan",
+                !isOpen &&
+                  aboveFloor &&
+                  "border-hud-cyan/45 bg-hud-cyan/10 text-hud-cyan hover:border-hud-cyan/70",
+                !isOpen &&
+                  !aboveFloor &&
+                  "border-border/70 bg-background/80 text-muted-foreground hover:border-border",
                 isOpen && p.live && "border-hud-green/70 bg-hud-green/20 text-hud-green text-glow scale-110",
-                isOpen && !p.live && "border-border/40 bg-background/50 text-muted-foreground/35 line-through scale-90",
+                isOpen &&
+                  !p.live &&
+                  "border-border/40 bg-background/50 text-muted-foreground/35 line-through scale-90",
                 isPing && "ring-2 ring-hud-cyan/50",
               )}
             >
@@ -128,7 +151,7 @@ export default function PortMapper({
                 <span className="pointer-events-none absolute inset-0 animate-ring rounded-full border border-hud-cyan/40" />
               )}
               <span className="font-mono">{p.num}</span>
-              <span className="text-[8px] opacity-75">{isOpen ? `${p.signal}%` : "· ·"}</span>
+              <span className="text-[8px] opacity-80">{p.signal}%</span>
             </button>
           );
         })}
