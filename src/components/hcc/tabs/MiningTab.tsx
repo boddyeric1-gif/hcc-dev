@@ -71,15 +71,41 @@ export default function MiningTab() {
 
   return (
     <div className="space-y-3">
-      <Panel label="MINING FARM — LIVE RENDER" right={<SceneBrightness />}>
-        <div className="h-[42vh] min-h-[260px] w-full">
+      {/* ROOM VIEWPORT — glass floor, scene owns the space */}
+      <section className="relative -mx-1 overflow-hidden rounded-lg border border-hud-green/25 bg-black/40 shadow-[0_0_40px_-12px] shadow-hud-green/20 sm:-mx-2">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between px-3 py-2">
+          <div className="rounded border border-hud-green/30 bg-background/70 px-2 py-1 backdrop-blur-md">
+            <p className="text-[9px] tracking-[0.28em] text-hud-green">FARM FLOOR · LIVE</p>
+          </div>
+          <div className="rounded border border-border/50 bg-background/70 backdrop-blur-md">
+            <SceneBrightness />
+          </div>
+        </div>
+        <div className="h-[52vh] min-h-[300px] w-full sm:h-[56vh]">
           <ClientOnly fallback={<SceneFallback />}>
             <Suspense fallback={<SceneFallback />}>
               <MiningScene v={visual} quality={state.quality} brightness={state.brightness} />
             </Suspense>
           </ClientOnly>
         </div>
-      </Panel>
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent" />
+        <div className="relative z-10 grid grid-cols-3 gap-2 border-t border-hud-green/15 bg-background/85 px-3 py-2 backdrop-blur-md">
+          <div>
+            <p className="text-[8px] tracking-[0.18em] text-muted-foreground">HASH</p>
+            <p className="text-[11px] tabular-nums text-hud-green">{Math.round(read.effectiveHash)} MH/s</p>
+          </div>
+          <div>
+            <p className="text-[8px] tracking-[0.18em] text-muted-foreground">DRAW</p>
+            <p className="text-[11px] tabular-nums text-hud-amber">{(read.watts / 1000).toFixed(1)} kW</p>
+          </div>
+          <div>
+            <p className="text-[8px] tracking-[0.18em] text-muted-foreground">NET</p>
+            <p className={cn("text-[11px] tabular-nums", read.netPerSec >= 0 ? "text-hud-green" : "text-hud-red")}>
+              {Math.round(read.netPerSec * 3600).toLocaleString()} cr/h
+            </p>
+          </div>
+        </div>
+      </section>
 
       <Panel label="MARKET" className="p-3">
         <div className="grid grid-cols-3 gap-2">
