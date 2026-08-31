@@ -16,10 +16,10 @@ export default function OperationStage({
   flash,
 }: {
   target: Target;
-  progress?: TargetProgress;
+  progress?: TargetProgress | undefined;
   running: OpKind | null;
   /** brief success/fail flash while an op resolves */
-  flash?: "ok" | "fail" | null;
+  flash?: "ok" | "fail" | null | undefined;
 }) {
   const filed = new Set(progress?.evidence ?? []);
 
