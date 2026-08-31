@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
   Boxes,
   FileSearch,
@@ -26,8 +26,10 @@ import RigTab from "./tabs/RigTab";
 import ShopTab from "./tabs/ShopTab";
 import TargetsTab from "./tabs/TargetsTab";
 import ToolsTab from "./tabs/ToolsTab";
+import { Panel } from "./ui";
 import { useGame } from "@/lib/hcc/store";
 import { audio } from "@/lib/hcc/audio";
+import { deskTier, tabUnlocked, unlockHint, visibleTabs } from "@/lib/hcc/progression";
 import { deriveMining, rankName } from "@/lib/hcc/state";
 import type { TabId } from "@/lib/hcc/types";
 import { cn } from "@/lib/utils";
@@ -60,6 +62,12 @@ function ShellInner() {
   const online = state.phase === "online";
   const isPerf = state.quality === "performance";
   const isMining = state.tab === "mining";
+  const tier = deskTier(state);
+  const navTabs = useMemo(() => {
+    const allowed = new Set(visibleTabs(tier));
+    return TABS.filter((t) => allowed.has(t.id));
+  }, [tier]);
+  const tabOk = tabUnlocked(state, state.tab);
 
   useEffect(() => {
     if (!online) return;
@@ -72,13 +80,20 @@ function ShellInner() {
     audio.setSettings(state.audio);
   }, [state.audio]);
 
-  // Clear focus when leaving tools
   useEffect(() => {
     if (state.tab !== "tools") {
       setFocused(false);
       setLabel(null);
     }
   }, [state.tab, setFocused, setLabel]);
+
+  // If Normal mode still has this tab gated, bounce to CMD with a soft lock message
+  useEffect(() => {
+    if (!online) return;
+    if (!tabUnlocked(state, state.tab) && state.tab !== "guide") {
+      // guide always reachable via header; mining/rig gated in nav only
+    }
+  }, [online, state, state.tab]);
 
   useEffect(() => {
     if (!online) return;
@@ -107,7 +122,7 @@ function ShellInner() {
         "relative flex min-h-dvh flex-col",
         isPerf && "perf-mode",
         focused && "hcc-focus",
-        isMining && "hcc-mining-room",
+        isMining && tabOk && "hcc-mining-room",
       )}
     >
       <div className="pointer-events-none fixed inset-0 hud-grid opacity-[0.38]" aria-hidden />
@@ -116,7 +131,7 @@ function ShellInner() {
       {!isMining && (
         <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-hud-cyan/8 blur-2xl animate-sweep" aria-hidden />
       )}
-      {isMining && (
+      {isMining && tabOk && (
         <div className="pointer-events-none fixed inset-0 bg-gradient-to-b from-background/20 via-transparent to-background/80" aria-hidden />
       )}
       <div className="phosphor-bloom" aria-hidden />
@@ -126,7 +141,7 @@ function ShellInner() {
         className={cn(
           "safe-top sticky top-0 z-30 border-b bg-background/80 backdrop-blur-xl transition-all duration-300",
           focused ? "border-hud-cyan/40" : "border-hud-cyan/25",
-          isMining && "border-hud-green/20 bg-background/55",
+          isMining && tabOk && "border-hud-green/20 bg-background/55",
         )}
       >
         <div className="safe-x mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5">
@@ -143,7 +158,7 @@ function ShellInner() {
                   <span className="sr-only"> — Hunting Cyber Criminals</span>
                 </h1>
                 <OperatorBadge badgeId={state.installed.badge} />
-                {isMining && (
+                {isMining && tabOk && (
                   <span className="text-[9px] tracking-[0.28em] text-hud-green/80">FARM FLOOR</span>
                 )}
               </>
@@ -191,30 +206,48 @@ function ShellInner() {
         className={cn(
           "safe-x relative z-10 mx-auto w-full max-w-3xl flex-1 px-3 pt-3 transition-[padding] duration-300",
           focused ? "pb-6" : "pb-console",
-          isMining && "px-2 sm:px-3",
+          isMining && tabOk && "px-2 sm:px-3",
         )}
       >
         {!focused && <TabTip />}
-        {state.tab === "command" && <CommandTab />}
-        {state.tab === "targets" && <TargetsTab />}
-        {state.tab === "tools" && <ToolsTab />}
-        {state.tab === "rig" && <RigTab />}
-        {state.tab === "mining" && <MiningTab />}
-        {state.tab === "shop" && <ShopTab />}
-        {state.tab === "case" && <CaseTab />}
-        {state.tab === "guide" && <GuideTab />}
+        {!tabOk && state.tab !== "guide" ? (
+          <Panel label="SECTION LOCKED" className="p-4">
+            <p className="text-[12px] leading-relaxed text-muted-foreground">{unlockHint(state.tab)}</p>
+            <p className="mt-2 text-[10px] tracking-[0.16em] text-hud-cyan">
+              DESK TIER · {tier.toUpperCase()} — switch to Experienced in GUIDE for the full console now.
+            </p>
+            <button
+              type="button"
+              className="mt-3 text-[11px] tracking-[0.16em] text-hud-cyan underline-offset-2 hover:underline"
+              onClick={() => dispatch({ type: "tab", tab: "command" })}
+            >
+              Return to CMD
+            </button>
+          </Panel>
+        ) : (
+          <>
+            {state.tab === "command" && <CommandTab />}
+            {state.tab === "targets" && <TargetsTab />}
+            {state.tab === "tools" && <ToolsTab />}
+            {state.tab === "rig" && <RigTab />}
+            {state.tab === "mining" && <MiningTab />}
+            {state.tab === "shop" && <ShopTab />}
+            {state.tab === "case" && <CaseTab />}
+            {state.tab === "guide" && <GuideTab />}
+          </>
+        )}
       </main>
 
       <nav
         className={cn(
           "safe-bottom fixed inset-x-0 bottom-0 z-30 border-t bg-background/90 backdrop-blur-xl transition-transform duration-300 ease-out",
           focused ? "pointer-events-none translate-y-full border-transparent opacity-0" : "border-hud-cyan/25 opacity-100",
-          isMining && !focused && "border-hud-green/20",
+          isMining && tabOk && !focused && "border-hud-green/20",
         )}
         aria-hidden={focused}
       >
         <div className="no-scrollbar safe-x mx-auto flex max-w-3xl gap-1 overflow-x-auto px-2 py-1.5">
-          {TABS.map((t) => {
+          {navTabs.map((t) => {
             const Icon = t.icon;
             const active = state.tab === t.id;
             return (

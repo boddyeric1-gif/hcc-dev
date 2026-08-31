@@ -5,6 +5,7 @@ import OperatorBadge from "../OperatorBadge";
 import PrestigePanel from "../PrestigePanel";
 import { Bar, Chip, HudButton, Panel, Stat } from "../ui";
 import { useGame, useStats } from "@/lib/hcc/store";
+import { deskTier, showPrestigePanel } from "@/lib/hcc/progression";
 import {
   allTargets,
   channelEchoChance,
@@ -30,6 +31,8 @@ export default function CommandTab() {
   const echoPct = Math.round(channelEchoChance(state) * 100);
   const deskPct = Math.round(deskBountyBonus(state.active.length) * 100);
   const farm = useMemo(() => deriveMining(state, Date.now()), [state]);
+  const tier = deskTier(state);
+  const prestigeOk = showPrestigePanel(state);
   const rankPct = useMemo(() => {
     if (nextIntel === null) return 100;
     return (state.intel / nextIntel) * 100;
@@ -43,7 +46,14 @@ export default function CommandTab() {
 
   return (
     <div className="space-y-3">
-      {/* SITUATION REPORT — single glance home */}
+      {tier === "rookie" && state.experienceMode === "normal" && (
+        <div className="rounded-md border border-hud-cyan/30 bg-hud-cyan/5 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
+          <span className="tracking-[0.18em] text-hud-cyan">ROOKIE DESK</span> — hunt loop only for now
+          (Targets → Tools → Case). Rig, Mining and the full manual tab unlock as you buy gear or land a
+          takedown. Switch to Experienced in GUIDE anytime for the full console.
+        </div>
+      )}
+
       <section className="panel relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 scanlines opacity-30" aria-hidden />
         <header className="relative z-10 flex flex-wrap items-center justify-between gap-2 border-b border-hud-cyan/20 px-3 py-2">
@@ -69,12 +79,16 @@ export default function CommandTab() {
           <Stat label="CREDITS" value={`${Math.round(state.credits).toLocaleString()} cr`} tone="green" />
           <Stat label="INTEL" value={`${state.intel.toLocaleString()}`} tone="violet" hint={nextIntel ? `next @ ${nextIntel}` : "max rank"} />
           <Stat label="DESK" value={`${state.active.length}/${slots}`} tone="cyan" hint={readyCount ? `${readyCount} ready to file` : `${echoPct}% echo`} />
-          <Stat
-            label="FARM NET"
-            value={`${Math.round(farm.netPerSec * 3600).toLocaleString()} cr/h`}
-            tone={farm.netPerSec >= 0 ? "green" : "red"}
-            hint={farm.effectiveHash > 0 ? `${Math.round(farm.effectiveHash)} MH/s` : "offline"}
-          />
+          {tier === "full" || state.experienceMode === "experienced" ? (
+            <Stat
+              label="FARM NET"
+              value={`${Math.round(farm.netPerSec * 3600).toLocaleString()} cr/h`}
+              tone={farm.netPerSec >= 0 ? "green" : "red"}
+              hint={farm.effectiveHash > 0 ? `${Math.round(farm.effectiveHash)} MH/s` : "offline"}
+            />
+          ) : (
+            <Stat label="CASES LEFT" value={`${remaining}`} tone="amber" hint="in the field queue" />
+          )}
         </div>
 
         <div className="relative z-10 space-y-2 border-t border-border/40 px-3 pb-3">
@@ -97,9 +111,11 @@ export default function CommandTab() {
           <HudButton size="sm" onClick={() => dispatch({ type: "tab", tab: "targets" })}>
             Targets
           </HudButton>
-          <HudButton size="sm" tone="green" onClick={() => dispatch({ type: "tab", tab: "mining" })}>
-            Farm floor
-          </HudButton>
+          {tier === "full" && (
+            <HudButton size="sm" tone="green" onClick={() => dispatch({ type: "tab", tab: "mining" })}>
+              Farm floor
+            </HudButton>
+          )}
           {deskPct > 0 && (
             <span className="self-center text-[10px] tracking-[0.14em] text-hud-green">
               DESK BONUS +{deskPct}%
@@ -108,7 +124,6 @@ export default function CommandTab() {
         </div>
       </section>
 
-      {/* PRIORITY — always visible, not only guided mode */}
       {next && (
         <Panel label="PRIORITY" className="p-3">
           <p className="text-[12px] leading-relaxed text-foreground/90">{next.label}</p>
@@ -126,12 +141,12 @@ export default function CommandTab() {
         </Panel>
       )}
 
-      {/* CHANNEL STRIP */}
       <Panel
         label="ACTIVE DESK"
         right={
           <span className="text-[10px] tabular-nums text-muted-foreground">
-            {state.active.length}/{slots} · echo {echoPct}%
+            {state.active.length}/{slots}
+            {tier !== "rookie" ? ` · echo ${echoPct}%` : ""}
           </span>
         }
         className="p-3"
@@ -171,7 +186,7 @@ export default function CommandTab() {
           </ul>
         )}
         <p className="mt-2 text-[10px] text-muted-foreground">
-          {remaining} cases still open in the field queue · {state.takedowns} career takedowns
+          {remaining} cases still open · {state.takedowns} career takedowns
         </p>
       </Panel>
 
@@ -204,7 +219,7 @@ export default function CommandTab() {
         </Panel>
       )}
 
-      <PrestigePanel />
+      {prestigeOk && <PrestigePanel />}
 
       <Panel
         label="EVENT STREAM"
@@ -214,7 +229,7 @@ export default function CommandTab() {
           </span>
         }
       >
-        <EventStream log={state.log} className="h-52" />
+        <EventStream log={state.log} className={tier === "rookie" ? "h-36" : "h-52"} />
       </Panel>
     </div>
   );
