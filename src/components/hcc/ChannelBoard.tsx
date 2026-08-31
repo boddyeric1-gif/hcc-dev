@@ -1,18 +1,20 @@
 import { Bar, Chip, HudButton, Panel } from "./ui";
 import { useGame, useStats } from "@/lib/hcc/store";
-import { evidencePct, findTarget } from "@/lib/hcc/state";
+import { channelEchoChance, deskBountyBonus, evidencePct, findTarget } from "@/lib/hcc/state";
 import { cn } from "@/lib/utils";
 
 /**
  * Live view of every case currently held on a channel. Each channel keeps its
  * own target, evidence set and completion state — switching between them here
- * never discards progress.
+ * never discards progress. Multi-channel desks also gain echo chance + submit bonus.
  */
 export default function ChannelBoard({ compact = false }: { compact?: boolean }) {
   const { state, dispatch } = useGame();
   const stats = useStats();
   const slots = Math.max(1, Math.round(stats.opSlots));
   const empty = Math.max(0, slots - state.active.length);
+  const echoPct = Math.round(channelEchoChance(state) * 100);
+  const deskPct = Math.round(deskBountyBonus(state.active.length) * 100);
 
   return (
     <Panel
@@ -91,9 +93,13 @@ export default function ChannelBoard({ compact = false }: { compact?: boolean })
           </div>
         ))}
       </div>
-      <p className="mt-2 text-[10px] text-muted-foreground">
-        Every channel runs independently — evidence on one case is never lost by working another. Widen the desk
-        with Split-Session Daemon, Op Orchestrator, Swarm Controller, Hive Mesh and Task Force Liaison.
+      <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+        Evidence on each channel is independent. With 2+ cases open, successful ops have a{" "}
+        <span className="text-hud-cyan">{echoPct}%</span> chance to echo the same evidence kind to other
+        channels{state.owned.includes("tool-oracle") ? " (Oracle Mesh: always)" : ""}. Submitting while the desk is
+        loaded pays a{" "}
+        <span className="text-hud-green">{deskPct}%</span> desk bounty bonus. Widen the desk with Split-Session,
+        Orchestrator, Swarm, Hive, Liaison, or Oracle.
       </p>
     </Panel>
   );

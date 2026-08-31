@@ -21,14 +21,13 @@ type Props = {
   target?: [number, number, number];
   minDistance?: number;
   maxDistance?: number;
-  /** Reflective floor plane size; 0 disables it. */
   floor?: number;
 };
 
 const DPR: Record<Quality, [number, number]> = {
-  ultra: [1, 2],
-  balanced: [1, 1.75],
-  performance: [0.75, 1.25],
+  ultra: [1, 1.75],
+  balanced: [1, 1.35],
+  performance: [0.7, 1.1],
 };
 
 export default function SceneFrame({
@@ -42,15 +41,18 @@ export default function SceneFrame({
   floor = 26,
 }: Props) {
   const b = Math.max(0.6, Math.min(2.4, brightness));
+  const heavy = quality === "ultra";
   return (
     <Canvas
       shadows={quality !== "performance"}
       dpr={DPR[quality]}
+      frameloop="always"
       gl={{
-        antialias: quality !== "performance",
+        antialias: quality === "ultra",
         powerPreference: "high-performance",
         toneMapping: THREE.ACESFilmicToneMapping,
         toneMappingExposure: 0.95 * b,
+        stencil: false,
       }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
@@ -58,7 +60,6 @@ export default function SceneFrame({
       }}
     >
       <color attach="background" args={["#080d14"]} />
-      {/* layered atmospheric depth rather than a flat wall of fog */}
       <fogExp2 attach="fog" args={["#0a121b", 0.055 / Math.max(0.7, b)]} />
       <PerspectiveCamera makeDefault position={camera} fov={38} />
       <OrbitControls
@@ -72,14 +73,15 @@ export default function SceneFrame({
         dampingFactor={0.08}
       />
 
-      {/* base illumination — lifted so hardware reads clearly on any display */}
       <ambientLight intensity={0.3 * b} color="#8fb8dc" />
       <hemisphereLight args={["#7fa8d8", "#0a0f16", 0.28 * b]} />
       <directionalLight position={[3.5, 5, 3]} intensity={0.32 * b} color="#cfe4ff" />
       <directionalLight position={[-4, 3, -2]} intensity={0.28 * b} color="#5f8dff" />
 
       <Suspense fallback={null}>
-        <Environment preset="night" environmentIntensity={0.85 * b} />
+        {quality !== "performance" && (
+          <Environment preset="night" environmentIntensity={(heavy ? 0.85 : 0.55) * b} />
+        )}
         {floor > 0 && (
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]} receiveShadow>
             <planeGeometry args={[floor, floor]} />
@@ -87,10 +89,10 @@ export default function SceneFrame({
               <meshStandardMaterial color="#121821" roughness={0.55} metalness={0.5} />
             ) : (
               <MeshReflectorMaterial
-                blur={[300, 90]}
-                resolution={quality === "ultra" ? 1024 : 512}
+                blur={heavy ? [300, 90] : [120, 40]}
+                resolution={heavy ? 768 : 384}
                 mixBlur={0.9}
-                mixStrength={22}
+                mixStrength={heavy ? 22 : 12}
                 depthScale={1.1}
                 minDepthThreshold={0.4}
                 maxDepthThreshold={1.35}
@@ -107,31 +109,31 @@ export default function SceneFrame({
 
       <ContactShadows
         position={[0, 0.002, 0]}
-        opacity={0.5}
+        opacity={0.45}
         scale={14}
-        blur={2.4}
+        blur={2.2}
         far={5}
-        resolution={quality === "performance" ? 256 : 1024}
+        resolution={quality === "performance" ? 128 : quality === "balanced" ? 384 : 768}
       />
 
       {quality !== "performance" && (
-        <EffectComposer multisampling={quality === "ultra" ? 4 : 0}>
+        <EffectComposer multisampling={heavy ? 2 : 0}>
           <N8AO
-            aoRadius={0.9}
-            intensity={quality === "ultra" ? 2.1 : 1.5}
+            aoRadius={0.85}
+            intensity={heavy ? 1.8 : 1.2}
             distanceFalloff={1.1}
-            quality={quality === "ultra" ? "high" : "medium"}
-            halfRes={quality !== "ultra"}
+            quality={heavy ? "medium" : "low"}
+            halfRes
             color="#050810"
           />
           <Bloom
-            intensity={quality === "ultra" ? 1.5 : 1.1}
-            luminanceThreshold={0.22}
+            intensity={heavy ? 1.35 : 0.95}
+            luminanceThreshold={0.24}
             luminanceSmoothing={0.42}
             mipmapBlur
           />
           <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
-          <Vignette eskil={false} offset={0.3} darkness={0.5} />
+          <Vignette eskil={false} offset={0.3} darkness={0.48} />
         </EffectComposer>
       )}
     </Canvas>
