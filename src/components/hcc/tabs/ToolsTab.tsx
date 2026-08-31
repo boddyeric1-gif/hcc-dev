@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import ChannelBoard from "../ChannelBoard";
+import { useFocusControls } from "../FocusMode";
 import Cipher from "../tools/Cipher";
 import LedgerTrace from "../tools/LedgerTrace";
 import OperationStage from "../tools/OperationStage";
@@ -27,11 +28,23 @@ export default function ToolsTab() {
   const [running, setRunning] = useState<OpKind | null>(null);
   const [run, setRun] = useState(() => Math.floor(Math.random() * 1e6));
   const [flash, setFlash] = useState<"ok" | "fail" | null>(null);
+  const { enter, exit } = useFocusControls();
 
   const diff = useMemo(
     () => (target ? opDifficulty(target, { crack: stats.crack, rank: rankIndex(state.intel) }) : null),
     [target, stats.crack, state.intel],
   );
+
+  // Keep shell focus chrome in sync with live op
+  useEffect(() => {
+    if (running) {
+      const name = OPS.find((o) => o.kind === running)?.name ?? running.toUpperCase();
+      enter(name);
+    } else {
+      exit();
+    }
+    return () => exit();
+  }, [running, enter, exit]);
 
   if (!target || !diff) return null;
   const progress = state.progress[target.id];
@@ -57,38 +70,47 @@ export default function ToolsTab() {
     setRunning(kind);
   };
 
+  const abort = () => {
+    setRunning(null);
+    setFlash(null);
+    setRun((r) => r + 1);
+  };
+
   const seed = seedFor(target.id, running ?? "none", run);
+  const inFocus = running !== null;
 
   return (
-    <div className="space-y-3">
-      <ChannelBoard compact />
+    <div className={cn("space-y-3", inFocus && "-mx-1")}>
+      {!inFocus && <ChannelBoard compact />}
 
       {engaged && !seized && (
         <OperationStage target={target} progress={progress} running={running} flash={flash} />
       )}
 
-      <Panel label="TOOLKIT" className="p-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[10px] tracking-[0.2em] text-muted-foreground">ENGAGING</p>
-            <h2 className="font-display text-lg tracking-widest text-hud-cyan">{target.codename}</h2>
+      {!inFocus && (
+        <Panel label="TOOLKIT" className="p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] tracking-[0.2em] text-muted-foreground">ENGAGING</p>
+              <h2 className="font-display text-lg tracking-widest text-hud-cyan">{target.codename}</h2>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Chip tone="cyan">SEC {target.security}</Chip>
+              <Chip
+                tone={diff.label === "BLACKSITE" ? "red" : diff.label === "HARDENED" ? "amber" : "green"}
+              >
+                {diff.label}
+              </Chip>
+              <Chip tone="dim">
+                CHANNELS {state.active.length}/{slots}
+              </Chip>
+            </div>
           </div>
-          <div className="flex flex-wrap justify-end gap-2">
-            <Chip tone="cyan">SEC {target.security}</Chip>
-            <Chip
-              tone={diff.label === "BLACKSITE" ? "red" : diff.label === "HARDENED" ? "amber" : "green"}
-            >
-              {diff.label}
-            </Chip>
-            <Chip tone="dim">
-              CHANNELS {state.active.length}/{slots}
-            </Chip>
-          </div>
-        </div>
-        <p className="mt-2 text-[10px] text-muted-foreground">
-          Difficulty adapts: harder targets shrink your budget, better rigs and higher rank widen it again.
-        </p>
-      </Panel>
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            Difficulty adapts: harder targets shrink your budget, better rigs and higher rank widen it again.
+          </p>
+        </Panel>
+      )}
 
       {seized && (
         <Panel className="p-3 text-xs text-hud-green">
@@ -154,17 +176,12 @@ export default function ToolsTab() {
       {engaged && running === "ledger" && <LedgerTrace diff={diff} seed={seed} onDone={finish("ledger")} />}
 
       {running !== null && (
-        <HudButton
-          tone="ghost"
-          size="sm"
-          onClick={() => {
-            setRunning(null);
-            setFlash(null);
-            setRun((r) => r + 1);
-          }}
-        >
-          Abort operation
-        </HudButton>
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-hud-cyan/30 bg-hud-cyan/5 px-3 py-2">
+          <p className="text-[10px] tracking-[0.2em] text-hud-cyan">FOCUS MODE · NAV HIDDEN</p>
+          <HudButton tone="ghost" size="sm" onClick={abort}>
+            Abort / Exit focus
+          </HudButton>
+        </div>
       )}
     </div>
   );

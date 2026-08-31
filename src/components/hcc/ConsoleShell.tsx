@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import BootScreen from "./BootScreen";
+import { FocusModeProvider, useFocusMode } from "./FocusMode";
 import OperatorBadge from "./OperatorBadge";
 import CaseTab from "./tabs/CaseTab";
 import GuideTab from "./tabs/GuideTab";
@@ -53,10 +54,12 @@ function requestedTab(): TabId | null {
   return candidate && TAB_IDS.has(candidate) ? candidate : null;
 }
 
-export default function ConsoleShell() {
+function ShellInner() {
   const { state, dispatch } = useGame();
+  const { focused, label, setFocused, setLabel } = useFocusMode();
   const online = state.phase === "online";
   const isPerf = state.quality === "performance";
+  const isMining = state.tab === "mining";
 
   useEffect(() => {
     if (!online) return;
@@ -68,6 +71,14 @@ export default function ConsoleShell() {
   useEffect(() => {
     audio.setSettings(state.audio);
   }, [state.audio]);
+
+  // Clear focus when leaving tools
+  useEffect(() => {
+    if (state.tab !== "tools") {
+      setFocused(false);
+      setLabel(null);
+    }
+  }, [state.tab, setFocused, setLabel]);
 
   useEffect(() => {
     if (!online) return;
@@ -84,59 +95,90 @@ export default function ConsoleShell() {
     tick();
     const id = window.setInterval(tick, 4000);
     return () => window.clearInterval(id);
-  }, [online, state]);
+  }, [online, state.mining, state.owned, state.installed, state.quality]);
 
   if (!online) {
     return <BootScreen onDone={(handle) => dispatch({ type: "login", handle })} />;
   }
 
   return (
-    <div className={cn("relative flex min-h-dvh flex-col", isPerf && "perf-mode")}>
+    <div
+      className={cn(
+        "relative flex min-h-dvh flex-col",
+        isPerf && "perf-mode",
+        focused && "hcc-focus",
+        isMining && "hcc-mining-room",
+      )}
+    >
       <div className="pointer-events-none fixed inset-0 hud-grid opacity-[0.38]" aria-hidden />
       <div className="data-dust" aria-hidden />
       <div className="pointer-events-none fixed inset-x-0 top-0 h-40 bg-hud-cyan/6 blur-3xl" aria-hidden />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-hud-cyan/8 blur-2xl animate-sweep" aria-hidden />
+      {!isMining && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-hud-cyan/8 blur-2xl animate-sweep" aria-hidden />
+      )}
+      {isMining && (
+        <div className="pointer-events-none fixed inset-0 bg-gradient-to-b from-background/20 via-transparent to-background/80" aria-hidden />
+      )}
       <div className="phosphor-bloom" aria-hidden />
       <div className="crt-overlay" aria-hidden />
 
-      <header className="safe-top sticky top-0 z-30 border-b border-hud-cyan/25 bg-background/80 backdrop-blur-xl">
+      <header
+        className={cn(
+          "safe-top sticky top-0 z-30 border-b bg-background/80 backdrop-blur-xl transition-all duration-300",
+          focused ? "border-hud-cyan/40" : "border-hud-cyan/25",
+          isMining && "border-hud-green/20 bg-background/55",
+        )}
+      >
         <div className="safe-x mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h1 className="font-display text-lg tracking-[0.32em] text-hud-cyan text-glow animate-flicker">
-              H.C.C
-              <span className="sr-only"> — Hunting Cyber Criminals</span>
-            </h1>
-            <OperatorBadge badgeId={state.installed.badge} />
-            <span aria-hidden className="hidden text-[9px] tracking-[0.32em] text-muted-foreground sm:inline">
-              HUNTING CYBER CRIMINALS
-            </span>
+            {focused ? (
+              <>
+                <p className="text-[10px] tracking-[0.28em] text-hud-cyan">FOCUS</p>
+                <span className="font-display text-sm tracking-[0.2em] text-foreground">{label ?? "OPERATION"}</span>
+              </>
+            ) : (
+              <>
+                <h1 className="font-display text-lg tracking-[0.32em] text-hud-cyan text-glow animate-flicker">
+                  H.C.C
+                  <span className="sr-only"> — Hunting Cyber Criminals</span>
+                </h1>
+                <OperatorBadge badgeId={state.installed.badge} />
+                {isMining && (
+                  <span className="text-[9px] tracking-[0.28em] text-hud-green/80">FARM FLOOR</span>
+                )}
+              </>
+            )}
           </div>
           <div className="flex items-center gap-3 text-[10px] tabular-nums">
-            <button
-              type="button"
-              aria-label={state.audio.muted ? "Unmute audio" : "Mute audio"}
-              onClick={() => {
-                audio.start();
-                audio.resume();
-                dispatch({ type: "audio", patch: { muted: !state.audio.muted } });
-              }}
-              className="text-muted-foreground transition-colors hover:text-hud-cyan"
-            >
-              {state.audio.muted ? <VolumeX className="size-4" strokeWidth={1.6} /> : <Volume2 className="size-4" strokeWidth={1.6} />}
-            </button>
-            <button
-              type="button"
-              aria-label="Open the field manual"
-              onClick={() => {
-                audio.sfx("tab");
-                dispatch({ type: "tab", tab: "guide" });
-              }}
-              className="text-muted-foreground transition-colors hover:text-hud-cyan"
-            >
-              <HelpCircle className="size-4" strokeWidth={1.6} />
-            </button>
-            {state.operator && <span className="hidden text-hud-cyan sm:inline">{state.operator}</span>}
-            <span className="text-hud-violet">{rankName(state.intel)}</span>
+            {!focused && (
+              <>
+                <button
+                  type="button"
+                  aria-label={state.audio.muted ? "Unmute audio" : "Mute audio"}
+                  onClick={() => {
+                    audio.start();
+                    audio.resume();
+                    dispatch({ type: "audio", patch: { muted: !state.audio.muted } });
+                  }}
+                  className="text-muted-foreground transition-colors hover:text-hud-cyan"
+                >
+                  {state.audio.muted ? <VolumeX className="size-4" strokeWidth={1.6} /> : <Volume2 className="size-4" strokeWidth={1.6} />}
+                </button>
+                <button
+                  type="button"
+                  aria-label="Open the field manual"
+                  onClick={() => {
+                    audio.sfx("tab");
+                    dispatch({ type: "tab", tab: "guide" });
+                  }}
+                  className="text-muted-foreground transition-colors hover:text-hud-cyan"
+                >
+                  <HelpCircle className="size-4" strokeWidth={1.6} />
+                </button>
+              </>
+            )}
+            {state.operator && !focused && <span className="hidden text-hud-cyan sm:inline">{state.operator}</span>}
+            {!focused && <span className="text-hud-violet">{rankName(state.intel)}</span>}
             <span className="text-hud-green">{Math.round(state.credits).toLocaleString()} cr</span>
             <span className={cn(state.heat > 66 ? "text-hud-red" : state.heat > 33 ? "text-hud-amber" : "text-hud-cyan")}>
               {Math.round(state.heat)}% heat
@@ -145,8 +187,14 @@ export default function ConsoleShell() {
         </div>
       </header>
 
-      <main className="pb-console safe-x relative z-10 mx-auto w-full max-w-3xl flex-1 px-3 pt-3">
-        <TabTip />
+      <main
+        className={cn(
+          "safe-x relative z-10 mx-auto w-full max-w-3xl flex-1 px-3 pt-3 transition-[padding] duration-300",
+          focused ? "pb-6" : "pb-console",
+          isMining && "px-2 sm:px-3",
+        )}
+      >
+        {!focused && <TabTip />}
         {state.tab === "command" && <CommandTab />}
         {state.tab === "targets" && <TargetsTab />}
         {state.tab === "tools" && <ToolsTab />}
@@ -157,7 +205,14 @@ export default function ConsoleShell() {
         {state.tab === "guide" && <GuideTab />}
       </main>
 
-      <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-hud-cyan/25 bg-background/90 backdrop-blur-xl">
+      <nav
+        className={cn(
+          "safe-bottom fixed inset-x-0 bottom-0 z-30 border-t bg-background/90 backdrop-blur-xl transition-transform duration-300 ease-out",
+          focused ? "pointer-events-none translate-y-full border-transparent opacity-0" : "border-hud-cyan/25 opacity-100",
+          isMining && !focused && "border-hud-green/20",
+        )}
+        aria-hidden={focused}
+      >
         <div className="no-scrollbar safe-x mx-auto flex max-w-3xl gap-1 overflow-x-auto px-2 py-1.5">
           {TABS.map((t) => {
             const Icon = t.icon;
@@ -166,6 +221,7 @@ export default function ConsoleShell() {
               <button
                 key={t.id}
                 type="button"
+                tabIndex={focused ? -1 : 0}
                 onClick={() => {
                   audio.sfx("tab");
                   dispatch({ type: "tab", tab: t.id });
@@ -173,8 +229,10 @@ export default function ConsoleShell() {
                 className={cn(
                   "flex min-w-[52px] flex-1 shrink-0 flex-col items-center gap-0.5 rounded-md border px-2 py-1.5 transition-all duration-200",
                   active
-                    ? "border-hud-cyan/55 bg-hud-cyan/12 text-hud-cyan shadow-[0_0_18px_-6px] shadow-hud-cyan/30"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/40",
+                    ? t.id === "mining"
+                      ? "border-hud-green/55 bg-hud-green/12 text-hud-green shadow-[0_0_18px_-6px] shadow-hud-green/30"
+                      : "border-hud-cyan/55 bg-hud-cyan/12 text-hud-cyan shadow-[0_0_18px_-6px] shadow-hud-cyan/30"
+                    : "border-transparent text-muted-foreground hover:bg-secondary/40 hover:text-foreground",
                 )}
               >
                 <Icon className="size-4" strokeWidth={1.6} />
@@ -187,5 +245,13 @@ export default function ConsoleShell() {
 
       {!state.guideSeen && <Onboarding />}
     </div>
+  );
+}
+
+export default function ConsoleShell() {
+  return (
+    <FocusModeProvider>
+      <ShellInner />
+    </FocusModeProvider>
   );
 }
