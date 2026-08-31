@@ -1,17 +1,89 @@
+import { useState } from "react";
+
 import { Bar, Chip, HudButton, Panel } from "../ui";
+import { audio } from "@/lib/hcc/audio";
 import { useGame } from "@/lib/hcc/store";
 import { evidencePct, findTarget } from "@/lib/hcc/state";
+import { cn } from "@/lib/utils";
 
 export default function CaseTab() {
   const { state, dispatch } = useGame();
   const t = findTarget(state, state.selected);
+  const [seize, setSeize] = useState<null | "animating" | "done">(null);
+
   if (!t) return null;
   const p = state.progress[t.id];
   const pct = evidencePct(state, t.id);
   const complete = pct >= 100;
 
+  const submit = () => {
+    if (!complete || p?.seized) return;
+    setSeize("animating");
+    audio.sfx("unlock");
+    window.setTimeout(() => {
+      dispatch({ type: "report", targetId: t.id });
+      setSeize("done");
+      audio.sfx("ok");
+    }, 1600);
+    window.setTimeout(() => setSeize(null), 4200);
+  };
+
   return (
-    <div className="space-y-3">
+    <div className="relative space-y-3">
+      {/* SEIZE SEQUENCE OVERLAY */}
+      {seize && (
+        <div
+          className={cn(
+            "fixed inset-0 z-50 flex items-center justify-center bg-background/90 px-4 backdrop-blur-md",
+            seize === "animating" && "animate-in fade-in duration-300",
+          )}
+          role="dialog"
+          aria-label="Case submission sequence"
+        >
+          <div className="panel relative w-full max-w-sm overflow-hidden p-6 text-center">
+            <div className="pointer-events-none absolute inset-0 scanlines opacity-50" aria-hidden />
+            <div className="pointer-events-none absolute inset-0 bg-hud-green/5 animate-soft-pulse" aria-hidden />
+
+            <p className="text-[10px] tracking-[0.35em] text-muted-foreground">TASK FORCE UPLINK</p>
+            <h2 className="mt-2 font-display text-3xl tracking-[0.25em] text-hud-cyan text-glow animate-flicker">
+              {t.codename}
+            </h2>
+            <p className="mt-1 font-mono text-[11px] text-muted-foreground">{t.caseId}</p>
+
+            <div className="my-5 border border-hud-green/40 bg-hud-green/10 py-3">
+              <p className="text-[11px] tracking-[0.3em] text-hud-green">
+                {seize === "animating" ? "TRANSMITTING DOSSIER…" : "SERVER SEIZED"}
+              </p>
+              {seize === "done" && (
+                <p className="mt-1 text-lg font-semibold tabular-nums text-hud-green text-glow">
+                  +{t.bounty.toLocaleString()} cr
+                </p>
+              )}
+              {seize === "done" && (
+                <p className="text-[10px] tracking-[0.2em] text-hud-violet">+{t.intel} INTEL</p>
+              )}
+            </div>
+
+            <div className="flex justify-center gap-2">
+              {t.ops.map((op) => (
+                <span
+                  key={op.kind}
+                  className="rounded border border-hud-green/40 px-2 py-0.5 text-[9px] tracking-[0.16em] text-hud-green"
+                >
+                  {op.kind.toUpperCase()}
+                </span>
+              ))}
+            </div>
+
+            {seize === "done" && (
+              <p className="mt-4 text-[10px] tracking-[0.2em] text-muted-foreground">
+                Operator identity filed. Heat adjusted.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       <Panel label={`CASE FILE ${t.caseId}`} className="p-3">
         <div className="flex items-start justify-between gap-3">
           <h2 className="font-display text-2xl tracking-widest text-hud-cyan text-glow">{t.codename}</h2>
@@ -74,9 +146,9 @@ export default function CaseTab() {
       {!p?.seized && (
         <HudButton
           tone={complete ? "green" : "ghost"}
-          disabled={!complete}
+          disabled={!complete || seize !== null}
           className="w-full"
-          onClick={() => dispatch({ type: "report", targetId: t.id })}
+          onClick={submit}
         >
           Submit to task force · {t.bounty.toLocaleString()} cr
         </HudButton>

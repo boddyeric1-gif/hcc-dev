@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import ChannelBoard from "../ChannelBoard";
 import Cipher from "../tools/Cipher";
 import LedgerTrace from "../tools/LedgerTrace";
+import OperationStage from "../tools/OperationStage";
 import PortMapper from "../tools/PortMapper";
 import Pretext from "../tools/Pretext";
 import { Chip, HudButton, Panel } from "../ui";
@@ -25,6 +26,7 @@ export default function ToolsTab() {
   const target = findTarget(state, state.selected);
   const [running, setRunning] = useState<OpKind | null>(null);
   const [run, setRun] = useState(() => Math.floor(Math.random() * 1e6));
+  const [flash, setFlash] = useState<"ok" | "fail" | null>(null);
 
   const diff = useMemo(
     () => (target ? opDifficulty(target, { crack: stats.crack, rank: rankIndex(state.intel) }) : null),
@@ -37,14 +39,21 @@ export default function ToolsTab() {
   const engaged = state.active.includes(target.id);
   const slots = Math.max(1, Math.round(stats.opSlots));
 
+  const pulseFlash = (f: "ok" | "fail" | null) => {
+    setFlash(f);
+    if (f) window.setTimeout(() => setFlash(null), 1600);
+  };
+
   const finish = (kind: OpKind) => (success: boolean) => {
     dispatch({ type: "op", targetId: target.id, kind, success });
     setRunning(null);
     setRun((r) => r + 1);
+    pulseFlash(success ? "ok" : "fail");
   };
 
   const start = (kind: OpKind) => {
     setRun((r) => r + 1);
+    setFlash(null);
     setRunning(kind);
   };
 
@@ -53,6 +62,11 @@ export default function ToolsTab() {
   return (
     <div className="space-y-3">
       <ChannelBoard compact />
+
+      {engaged && !seized && (
+        <OperationStage target={target} progress={progress} running={running} flash={flash} />
+      )}
+
       <Panel label="TOOLKIT" className="p-3">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
@@ -117,13 +131,25 @@ export default function ToolsTab() {
       )}
 
       {engaged && running === "ports" && (
-        <PortMapper target={target} diff={diff} seed={seed} onDone={finish("ports")} />
+        <PortMapper
+          target={target}
+          diff={diff}
+          seed={seed}
+          onDone={finish("ports")}
+          onFlash={pulseFlash}
+        />
       )}
       {engaged && running === "pretext" && (
         <Pretext target={target} diff={diff} seed={seed} onDone={finish("pretext")} />
       )}
       {engaged && running === "cipher" && (
-        <Cipher target={target} diff={diff} seed={seed} onDone={finish("cipher")} />
+        <Cipher
+          target={target}
+          diff={diff}
+          seed={seed}
+          onDone={finish("cipher")}
+          onFlash={pulseFlash}
+        />
       )}
       {engaged && running === "ledger" && <LedgerTrace diff={diff} seed={seed} onDone={finish("ledger")} />}
 
@@ -133,6 +159,7 @@ export default function ToolsTab() {
           size="sm"
           onClick={() => {
             setRunning(null);
+            setFlash(null);
             setRun((r) => r + 1);
           }}
         >
