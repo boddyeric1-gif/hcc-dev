@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Star } from "lucide-react";
 
 import { Chip, HudButton, Panel, Stat } from "../ui";
@@ -6,13 +6,14 @@ import StarsShop from "../StarsShop";
 import { audio } from "@/lib/hcc/audio";
 import { useGame, useStats } from "@/lib/hcc/store";
 import { itemById } from "@/lib/hcc/catalog";
+import { deskTier } from "@/lib/hcc/progression";
 import { deriveStats, rankIndex, shopItems } from "@/lib/hcc/state";
 import type { ItemCategory } from "@/lib/hcc/types";
 import { dualPriceFor } from "@/lib/telegram/stars";
 import { useStars } from "@/hooks/useStars";
 import { cn } from "@/lib/utils";
 
-const CATS: { id: ItemCategory; label: string }[] = [
+const CATS_FULL: { id: ItemCategory; label: string }[] = [
   { id: "hardware", label: "RIG" },
   { id: "mining", label: "MINING" },
   { id: "tools", label: "TOOLS" },
@@ -23,11 +24,24 @@ const CATS: { id: ItemCategory; label: string }[] = [
 export default function ShopTab() {
   const { state, dispatch } = useGame();
   const stats = useStats();
-  const [cat, setCat] = useState<ItemCategory>("hardware");
+  const tier = deskTier(state);
+  const cats = useMemo(() => {
+    if (tier === "rookie") {
+      // Lead with the hunt, not the farm spreadsheet
+      return [
+        { id: "tools" as const, label: "TOOLS" },
+        { id: "hardware" as const, label: "RIG" },
+        { id: "custom" as const, label: "STYLE" },
+        { id: "perks" as const, label: "PERKS" },
+        { id: "mining" as const, label: "MINING" },
+      ];
+    }
+    return CATS_FULL;
+  }, [tier]);
+  const [cat, setCat] = useState<ItemCategory>("tools");
   const { isTelegram, ready, buy: buyWithStars } = useStars();
   const rank = rankIndex(state.intel);
   const items = shopItems(cat);
-
 
   return (
     <div className="space-y-3">
@@ -36,8 +50,13 @@ export default function ShopTab() {
           <Stat label="CREDITS" value={`${Math.round(state.credits).toLocaleString()} cr`} tone="green" />
           <Stat label="CLEARANCE" value={`RANK ${rank + 1}`} tone="violet" />
         </div>
+        {tier === "rookie" && (
+          <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+            Start with TOOLS and RIG if you want easier ops. Mining gear is optional until you open the farm floor.
+          </p>
+        )}
         <div className="mt-3 flex flex-wrap gap-1">
-          {CATS.map((c) => (
+          {cats.map((c) => (
             <button
               key={c.id}
               type="button"
@@ -53,7 +72,7 @@ export default function ShopTab() {
         </div>
       </Panel>
 
-      <StarsShop />
+      {(tier === "full" || state.experienceMode === "experienced") && <StarsShop />}
 
       <div className="grid gap-3 sm:grid-cols-2">
         {items.map((it) => {
@@ -62,7 +81,6 @@ export default function ShopTab() {
           const afford = state.credits >= it.price;
           const count = state.mining.units[it.id] ?? 0;
           const installed = it.slot ? state.installed[it.slot] === it.id : false;
-          // Dual-priced goods can be bought here with credits or instantly with Stars.
           const starDeal = dualPriceFor(it.id);
           const premium = !!starDeal;
           return (
@@ -179,7 +197,7 @@ function effectDeltas(state: Parameters<typeof deriveStats>[0], id: string): Del
     "ACTIVE CHANNELS",
     Math.max(1, Math.round(before.opSlots)),
     Math.max(1, Math.round(after.opSlots)),
-    (n) => `${n} / ${n}`,
+    (n) => `${n}`,
   );
   push("FAIL HEAT", before.failHeatMul, after.failHeatMul, (n) => `${Math.round(n * 100)}%`);
   push("MINING HEAT", before.miningHeatMul, after.miningHeatMul, (n) => `${Math.round(n * 100)}%`);

@@ -20,7 +20,6 @@ export const deskTier = (s: GameState): DeskTier => {
 export const visibleTabs = (tier: DeskTier): readonly TabId[] => {
   switch (tier) {
     case "rookie":
-      // Hunt loop only — shop for basics, guide via header icon
       return ["command", "targets", "tools", "case", "shop"];
     case "field":
       return ["command", "targets", "tools", "rig", "case", "shop"];
@@ -30,10 +29,12 @@ export const visibleTabs = (tier: DeskTier): readonly TabId[] => {
   }
 };
 
-export const tabUnlocked = (s: GameState, tab: TabId): boolean =>
-  visibleTabs(deskTier(s)).includes(tab);
+export const tabUnlocked = (s: GameState, tab: TabId): boolean => {
+  // Manual always available (header ? and deep links)
+  if (tab === "guide") return true;
+  return visibleTabs(deskTier(s)).includes(tab);
+};
 
-/** Soft copy when a locked surface is reached via deep link. */
 export const unlockHint = (tab: TabId): string => {
   switch (tab) {
     case "mining":
@@ -47,15 +48,12 @@ export const unlockHint = (tab: TabId): string => {
   }
 };
 
-/** Show prestige block on CMD only when it is actionable or already in play. */
 export const showPrestigePanel = (s: GameState): boolean => {
   if (s.experienceMode === "experienced") return true;
   if (s.prestige > 0) return true;
-  // Close enough that teasing it is useful
   return s.takedowns >= 3 || s.intel >= 400;
 };
 
-/** Collapse mining “spreadsheet depth” until the player owns units (Normal). */
 export const showMiningAdvanced = (s: GameState): boolean => {
   if (s.experienceMode === "experienced") return true;
   const units = Object.values(s.mining.units).reduce((a, b) => a + b, 0);
