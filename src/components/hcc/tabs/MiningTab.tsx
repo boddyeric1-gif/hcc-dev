@@ -31,7 +31,7 @@ export default function MiningTab() {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 1500);
+    const id = window.setInterval(() => setNow(Date.now()), 2500);
     return () => window.clearInterval(id);
   }, []);
 
@@ -53,7 +53,6 @@ export default function MiningTab() {
       if (m.kind === "cooler") fans += n;
     });
     return {
-      // Farm scales without a visual cap; rows recede as hardware is added.
       gpuRigs: Math.min(60, gpuRigs),
       asics: Math.min(60, asics),
       shelves: Math.max(1, shelves),
@@ -250,7 +249,7 @@ export default function MiningTab() {
             </span>
           </li>
           <li className="flex justify-between gap-2">
-            <span className="text-muted-foreground">Power &amp; demand charges</span>
+            <span className="text-muted-foreground">Power & demand charges</span>
             <span className="tabular-nums text-hud-red">
               −{Math.round(read.costPerSec * 3600).toLocaleString()} cr/h
             </span>
