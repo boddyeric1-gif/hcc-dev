@@ -85,18 +85,12 @@ export const initialState = (): GameState => ({
   nextLineId: 1,
 });
 
-/**
- * Whether the Operative Pass is currently active. The server is authoritative;
- * this only reads the last synced expiry so the UI and yield math agree offline.
- */
 export const isPremiumActive = (s: GameState, now: number = Date.now()): boolean =>
   s.premium.expiresAt !== null && s.premium.expiresAt > now;
 
-/** UTC day key used for the once-per-day pass drop. */
 export const utcDayKey = (now: number = Date.now()): string =>
   new Date(now).toISOString().slice(0, 10);
 
-/** A pass holder can claim once per UTC day. */
 export const canClaimDaily = (s: GameState, now: number = Date.now()): boolean =>
   isPremiumActive(s, now) && s.premium.lastClaimOn !== utcDayKey(now);
 
@@ -149,7 +143,21 @@ export const deriveStats = (s: GameState): RigStats => {
   return out;
 };
 
-/** Every multiplicative contribution to mining yield, for the transparency panel. */
+/** Route F: chance a successful op echoes to other active channels. */
+export const channelEchoChance = (s: GameState): number => {
+  if (s.owned.includes("tool-oracle")) return 1;
+  const slots = Math.max(1, Math.round(deriveStats(s).opSlots));
+  // 20% base at 2 slots → up to 40% on a wide desk
+  return Math.min(0.4, 0.15 + 0.05 * slots);
+};
+
+/** Route F: extra bounty when submitting with multiple channels held. */
+export const deskBountyBonus = (activeCount: number): number => {
+  if (activeCount < 2) return 0;
+  // 10% at 2, +5% per extra channel, cap 25%
+  return Math.min(0.25, 0.1 + 0.05 * (activeCount - 2));
+};
+
 export const miningMulBreakdown = (s: GameState): { label: string; mul: number }[] => {
   const out: { label: string; mul: number }[] = [];
   const seen: Item[] = [];
@@ -208,7 +216,6 @@ export type MiningReadout = {
   limiter: string;
   coins: Record<Coin, CoinReadout>;
   totalNetPerSec: number;
-  /** raw catalogue hashrate before throttle and multipliers */
   rawHash: number;
   yieldMul: number;
   mulBreakdown: { label: string; mul: number }[];
@@ -219,7 +226,6 @@ export type MiningReadout = {
 
 const COIN_LIST: readonly Coin[] = ["BTC", "ETH", "GHST"];
 
-/** How many units of a hardware type are pointed at each coin. */
 export const unitAllocation = (
   s: GameState,
   id: string,
@@ -278,8 +284,6 @@ export const deriveMining = (s: GameState, at: number): MiningReadout => {
   const contract = contractRead(s.mining.contract, at);
   const capacityW = contract.capacityW;
 
-  // Over-capacity draw is allowed but billed at a punitive rate, and the
-  // breaker sags: only a small amount of overdraw is tolerated.
   const overageW = Math.max(0, watts - capacityW);
   const powerThrottle = watts > capacityW * 1.25 ? (capacityW * 1.25) / watts : 1;
   const heatLoad = Math.max(0, heat - cooling);
@@ -372,7 +376,6 @@ export const deriveMining = (s: GameState, at: number): MiningReadout => {
   };
 };
 
-/** Base cases plus every procedurally generated target, newest first. */
 export const allTargets = (s: GameState): readonly Target[] => [...s.generated, ...TARGETS];
 
 export const findTarget = (s: GameState, id: string | null | undefined): Target | undefined =>
@@ -535,12 +538,56 @@ export const reducer = (s: GameState, a: Action): GameState => {
         return pushLog(s, `${op.label} already filed for ${t.codename}.`, "dim");
       }
       const evidence = [...prev.evidence, a.kind];
+      let progress = {
+        ...s.progress,
+        [a.targetId]: { ...prev, evidence },
+      };
       let next: GameState = {
         ...s,
         intel: s.intel + Math.round(t.intel * 0.15),
-        progress: { ...s.progress, [a.targetId]: { ...prev, evidence } },
+        progress,
       };
       next = pushLog(next, `EVIDENCE FILED — ${op.captured}`, "ok");
+
+      // Route F — parallel-channel echo
+      const chance = channelEchoChance(s);
+      const echoed: string[] = [];
+      if (s.active.length > 1 && chance > 0) {
+        for (const id of s.active) {
+          if (id === a.targetId) continue;
+          const ot = findTarget(s, id);
+          const opg = progress[id] ?? { evidence: [] as OpKind[], seized: false };
+          if (!ot || opg.seized || opg.evidence.includes(a.kind)) continue;
+          if (!ot.ops.some((o) => o.kind === a.kind)) continue;
+          if (chance >= 1 || Math.random() < chance) {
+            const ev = [...opg.evidence, a.kind];
+            progress = { ...progress, [id]: { ...opg, evidence: ev } };
+            echoed.push(ot.codename);
+            if (ev.length === ot.ops.length) {
+              // dossier complete note after we assign progress
+            }
+          }
+        }
+        next = { ...next, progress };
+        if (echoed.length > 0) {
+          next = pushLog(
+            next,
+            chance >= 1
+              ? `ORACLE MESH — ${a.kind.toUpperCase()} mirrored to ${echoed.join(", ")}.`
+              : `CHANNEL ECHO — ${a.kind.toUpperCase()} leaked to ${echoed.join(", ")} (${Math.round(chance * 100)}% desk).`,
+            "warn",
+          );
+          for (const id of s.active) {
+            if (id === a.targetId) continue;
+            const ot = findTarget(s, id);
+            const opg = progress[id];
+            if (ot && opg && opg.evidence.length === ot.ops.length && !opg.seized) {
+              next = pushLog(next, `${ot.codename} dossier complete via channel echo.`, "warn");
+            }
+          }
+        }
+      }
+
       next = withHeat(next, 4);
       if (evidence.length === t.ops.length) {
         next = pushLog(next, `${t.codename} dossier complete. Ready to submit to task force.`, "warn");
@@ -555,7 +602,8 @@ export const reducer = (s: GameState, a: Action): GameState => {
         return pushLog(s, `Dossier for ${t.codename} is incomplete. Task force will not act.`, "warn");
       }
       const stats = deriveStats(s);
-      const payout = Math.round(t.bounty * (1 + stats.bounty));
+      const desk = deskBountyBonus(s.active.length);
+      const payout = Math.round(t.bounty * (1 + stats.bounty) * (1 + desk));
       let next: GameState = {
         ...s,
         credits: s.credits + payout,
@@ -575,14 +623,19 @@ export const reducer = (s: GameState, a: Action): GameState => {
         `${t.operator.realName} ("${t.operator.alias}") detained in ${t.operator.location}.`,
         "ok",
       );
-      next = pushLog(next, `Bounty settled: ${payout.toLocaleString()} cr · +${t.intel} intel`, "ok");
+      next = pushLog(
+        next,
+        desk > 0
+          ? `Bounty settled: ${payout.toLocaleString()} cr (+${Math.round(desk * 100)}% desk bonus) · +${t.intel} intel`
+          : `Bounty settled: ${payout.toLocaleString()} cr · +${t.intel} intel`,
+        "ok",
+      );
       next = withHeat(next, -18);
       return next;
     }
     case "buy": {
       const it = itemById(a.id);
       if (!it) return s;
-      // Stars-exclusive goods have no credit price and must never be bought with credits.
       if (isStarsOnlyItem(a.id) && !s.owned.includes(a.id))
         return pushLog(s, `${it.name} is only available through Telegram Stars.`, "warn");
       if (!it.stackable && s.owned.includes(a.id)) return s;
@@ -617,7 +670,6 @@ export const reducer = (s: GameState, a: Action): GameState => {
         "ok",
       );
     }
-    /** Fulfilment of a server-verified Stars purchase. Never called from raw UI. */
     case "grant-items": {
       const items = a.ids.map(itemById).filter((i): i is Item => !!i);
       if (items.length === 0) return s;
@@ -661,7 +713,6 @@ export const reducer = (s: GameState, a: Action): GameState => {
         "sys",
       );
     }
-    /** The backend is the source of truth: its balance replaces local math. */
     case "wallet-sync": {
       const balance = Math.max(0, Math.floor(a.balance));
       return {
@@ -720,7 +771,6 @@ export const reducer = (s: GameState, a: Action): GameState => {
     case "mining-accrue":
       return {
         ...s,
-        // In server mode power costs are netted off at settlement, not locally.
         credits: s.wallet.mode === "server" ? s.credits : Math.max(0, s.credits - a.cost),
         mining: {
           ...s.mining,
@@ -772,8 +822,6 @@ export const reducer = (s: GameState, a: Action): GameState => {
         lifetime: { ...base.lifetime, ...(sv.lifetime ?? {}) },
         premium: { ...base.premium, ...(sv.premium ?? {}) },
         wallet: { ...base.wallet, ...(sv.wallet ?? {}) },
-        // saves from before experience modes: anyone who finished the old
-        // onboarding is treated as experienced, new devices start guided
         experienceMode: sv.experienceMode ?? (sv.guideSeen ? "experienced" : "normal"),
         seenTips: sv.seenTips ?? [],
       };
@@ -783,7 +831,6 @@ export const reducer = (s: GameState, a: Action): GameState => {
       const level = s.prestige + 1;
       const reward = rewardForLevel(level);
       const base = initialState();
-      // Stars-exclusive goods are paid for, so they are never taken by a prestige reset.
       const keptStarsItems = s.owned.filter(isStarsOnlyItem);
       let next: GameState = {
         ...base,
@@ -797,7 +844,6 @@ export const reducer = (s: GameState, a: Action): GameState => {
         guideSeen: s.guideSeen,
         experienceMode: s.experienceMode,
         seenTips: s.seenTips,
-        // paid entitlements survive prestige
         premium: s.premium,
         wallet: s.wallet,
         log: s.log,
@@ -825,17 +871,12 @@ export const reducer = (s: GameState, a: Action): GameState => {
   }
 };
 
-/** Items merchandised in the credit shop. Stars-exclusive goods are excluded. */
 export const shopItems = (cat: Item["category"]): Item[] =>
   CATALOG.filter((i) => i.category === cat && !isStarsOnlyItem(i.id));
 
 export const ownedSlotItems = (s: GameState, slot: Slot): Item[] =>
   CATALOG.filter((i) => i.slot === slot && s.owned.includes(i.id));
 
-/**
- * Advisory only: what a guided player could sensibly do next. Pure read of
- * existing state — it never mutates anything and never performs an action.
- */
 export const nextRecommendedAction = (
   s: GameState,
 ): { label: string; tab: TabId } | null => {
