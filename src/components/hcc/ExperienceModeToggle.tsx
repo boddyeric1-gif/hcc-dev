@@ -13,19 +13,19 @@ const OPTIONS: {
   {
     mode: "normal",
     title: "NORMAL",
-    blurb: "I’m new — walk me through it.",
+    blurb: "Smaller console at first, tips on each tab. Mining & full desk unlock as you play.",
     recommended: true,
   },
   {
     mode: "experienced",
     title: "EXPERIENCED",
-    blurb: "I’ve got this — minimal hand-holding.",
+    blurb: "Full desk immediately — every tab and advanced panel, minimal hand-holding.",
   },
 ];
 
 /**
  * Preference switch only. Changing modes never touches progression, credits,
- * cases, mining, upgrades, prestige or Stars — it only changes guidance.
+ * cases, mining, upgrades, prestige or Stars — it only changes guidance and UI density.
  */
 export default function ExperienceModeToggle({
   onPick,
@@ -95,7 +95,7 @@ export default function ExperienceModeToggle({
     >
       {body}
       <p className="px-3 pb-3 text-[10px] leading-relaxed text-muted-foreground">
-        Guidance only. The game, economy and difficulty are identical in both modes.
+        Guidance and UI density only. Economy, difficulty and unlocks you already earned stay the same.
       </p>
     </Panel>
   );
