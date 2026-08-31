@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import BootScreen from "./BootScreen";
+import OperatorBadge from "./OperatorBadge";
 import CaseTab from "./tabs/CaseTab";
 import GuideTab from "./tabs/GuideTab";
 import Onboarding from "./Onboarding";
@@ -91,7 +92,6 @@ export default function ConsoleShell() {
 
   return (
     <div className={cn("relative flex min-h-dvh flex-col", isPerf && "perf-mode")}>
-      {/* Atmosphere */}
       <div className="pointer-events-none fixed inset-0 hud-grid opacity-[0.38]" aria-hidden />
       <div className="data-dust" aria-hidden />
       <div className="pointer-events-none fixed inset-x-0 top-0 h-40 bg-hud-cyan/6 blur-3xl" aria-hidden />
@@ -101,11 +101,12 @@ export default function ConsoleShell() {
 
       <header className="safe-top sticky top-0 z-30 border-b border-hud-cyan/25 bg-background/80 backdrop-blur-xl">
         <div className="safe-x mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 py-2.5">
-          <div className="flex items-baseline gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             <h1 className="font-display text-lg tracking-[0.32em] text-hud-cyan text-glow animate-flicker">
               H.C.C
               <span className="sr-only"> — Hunting Cyber Criminals</span>
             </h1>
+            <OperatorBadge badgeId={state.installed.badge} />
             <span aria-hidden className="hidden text-[9px] tracking-[0.32em] text-muted-foreground sm:inline">
               HUNTING CYBER CRIMINALS
             </span>
