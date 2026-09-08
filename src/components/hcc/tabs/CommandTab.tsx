@@ -4,6 +4,7 @@ import EventStream from "../EventStream";
 import OperatorBadge from "../OperatorBadge";
 import PrestigePanel from "../PrestigePanel";
 import { Bar, Chip, HudButton, Panel, Stat } from "../ui";
+import { ConsoleClock, Gauge, TerminalWindow } from "../hud";
 import { useGame, useStats } from "@/lib/hcc/store";
 import { deskTier, showPrestigePanel } from "@/lib/hcc/progression";
 import {
@@ -53,6 +54,93 @@ export default function CommandTab() {
           takedown. Switch to Experienced in GUIDE anytime for the full console.
         </div>
       )}
+
+      {/* OPERATOR CONSOLE HEADER — target profile + live operation gauges */}
+      <section className="panel bracket-frame relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 hud-grid opacity-30" aria-hidden />
+        <header className="relative flex flex-wrap items-center justify-between gap-2 border-b border-hud-cyan/20 px-3 py-2">
+          <div className="min-w-0">
+            <h2 className="font-display text-sm tracking-[0.28em] text-hud-cyan">CYBER-CRIMINAL HUNTER</h2>
+            <p className="text-[8px] tracking-[0.24em] text-muted-foreground">
+              TERMINAL-BASED HUNT CONSOLE
+            </p>
+          </div>
+          <div className="flex items-center gap-3 text-[9px] tracking-[0.18em] text-muted-foreground">
+            <ConsoleClock className="text-foreground" />
+            <span className="hidden sm:inline">
+              UPLINK · <span className="text-hud-green">CONNECTED</span>
+            </span>
+          </div>
+        </header>
+
+        <div className="relative grid gap-3 p-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="min-w-0 rounded-md border border-hud-cyan/20 bg-background/40 p-3">
+            <p className="text-[9px] tracking-[0.28em] text-muted-foreground">TARGET PROFILE</p>
+            {selected ? (
+              <>
+                <p className="mt-1 font-display text-lg tracking-[0.18em] text-hud-cyan text-glow">
+                  {selected.codename}
+                </p>
+                <dl className="mt-2 space-y-1 text-[10px]">
+                  <div className="flex justify-between gap-2">
+                    <dt className="tracking-[0.16em] text-muted-foreground">CASE</dt>
+                    <dd className="truncate text-foreground/90">{selected.caseId}</dd>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <dt className="tracking-[0.16em] text-muted-foreground">LAST KNOWN HOST</dt>
+                    <dd className="truncate text-foreground/90">{selected.host}</dd>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <dt className="tracking-[0.16em] text-muted-foreground">THREAT LEVEL</dt>
+                    <dd
+                      className={cn(
+                        selected.threat === "CRITICAL"
+                          ? "text-hud-red"
+                          : selected.threat === "SEVERE"
+                            ? "text-hud-amber"
+                            : "text-hud-cyan",
+                      )}
+                    >
+                      {selected.threat}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <dt className="tracking-[0.16em] text-muted-foreground">EVIDENCE</dt>
+                    <dd className="tabular-nums text-hud-green">{evidencePct(state, selected.id)}%</dd>
+                  </div>
+                </dl>
+              </>
+            ) : (
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                No target locked. Open TARGETS to engage a case.
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-start justify-center gap-4 rounded-md border border-hud-cyan/20 bg-background/40 p-3">
+            <Gauge
+              label="CRACK POWER"
+              pct={Math.min(100, stats.crack * 100)}
+              readout={`${Math.round(stats.crack * 100)}%`}
+              caption="ACTIVE"
+            />
+            <Gauge
+              label="STEALTH"
+              pct={Math.min(100, stats.dissipation * 5)}
+              readout={stats.dissipation.toFixed(0)}
+              caption="DISSIPATION"
+              tone="green"
+            />
+            <Gauge
+              label="TRACE HEAT"
+              pct={state.heat}
+              readout={`${Math.round(state.heat)}%`}
+              caption={state.heat > 66 ? "CRITICAL" : state.heat > 33 ? "ELEVATED" : "LOW"}
+              tone={state.heat > 66 ? "red" : state.heat > 33 ? "amber" : "cyan"}
+            />
+          </div>
+        </div>
+      </section>
 
       <section className="panel relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 scanlines opacity-30" aria-hidden />
@@ -221,8 +309,9 @@ export default function CommandTab() {
 
       {prestigeOk && <PrestigePanel />}
 
-      <Panel
-        label="EVENT STREAM"
+      <TerminalWindow
+        title="COMMAND TERMINAL"
+        subtitle={`${state.operator ?? "OPERATOR"}@HCC:~$`}
         right={
           <span className="text-[9px] text-hud-green/70">
             CRACK {(stats.crack * 100).toFixed(0)}% · SCAN {stats.scan.toFixed(1)}x
@@ -230,7 +319,7 @@ export default function CommandTab() {
         }
       >
         <EventStream log={state.log} className={tier === "rookie" ? "h-36" : "h-52"} />
-      </Panel>
+      </TerminalWindow>
     </div>
   );
 }

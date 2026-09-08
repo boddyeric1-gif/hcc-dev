@@ -1,7 +1,8 @@
 import { Suspense, lazy, useMemo } from "react";
 import { ClientOnly } from "@tanstack/react-router";
 
-import { Bar, Chip, HudButton, Panel, Stat } from "../ui";
+import { Bar, Chip, HudButton, Stat } from "../ui";
+import { TechSpec, TerminalWindow } from "../hud";
 import SceneBrightness from "../SceneBrightness";
 import type { RigVisual } from "../three/RigScene";
 import { useGame, useStats } from "@/lib/hcc/store";
@@ -63,8 +64,9 @@ export default function RigTab() {
 
   return (
     <div className="space-y-3">
-      <Panel
-        label="WORKSPACE — LIVE RENDER"
+      <TerminalWindow
+        title="WORKSPACE — LIVE RENDER"
+        subtitle="FACILITY CAM 01 · OPERATOR BAY"
         right={
           <div className="flex items-center gap-3">
             <SceneBrightness />
@@ -98,9 +100,9 @@ export default function RigTab() {
         <p className="border-t border-border/60 px-3 py-2 text-[10px] text-muted-foreground">
           Drag to orbit · pinch to zoom. The room updates as you install hardware.
         </p>
-      </Panel>
+      </TerminalWindow>
 
-      <Panel label="RIG PERFORMANCE" className="p-3">
+      <TerminalWindow title="RIG PERFORMANCE" subtitle="LIVE TELEMETRY" bodyClassName="p-3">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="CRACK POWER" value={`${(stats.crack * 100).toFixed(0)}%`} />
           <Stat label="SCAN SPEED" value={`${stats.scan.toFixed(1)}x`} tone="green" />
@@ -108,24 +110,45 @@ export default function RigTab() {
           <Stat label="MINING MULT" value={`${stats.miningMul.toFixed(2)}x`} tone="amber" />
         </div>
         <Bar value={stats.crack * 100} className="mt-3" />
-      </Panel>
+      </TerminalWindow>
 
-      <Panel label="INSTALLED HARDWARE" className="p-3">
-        <div className="space-y-2">
+      <TerminalWindow title="HARDWARE BAY" subtitle="INSTALLED LOADOUT" bodyClassName="p-3">
+        <div className="grid gap-2 sm:grid-cols-2">
           {SLOTS.map((slot) => {
             const current = itemById(state.installed[slot]);
             const alternatives = ownedSlotItems(state, slot).filter((i) => i.id !== current?.id);
+            const t = current?.tier ?? 0;
             return (
-              <div key={slot} className="rounded-md border border-border/60 bg-background/40 p-2">
-                <div className="flex items-center justify-between gap-2">
+              <div
+                key={slot}
+                className={cn(
+                  "relative overflow-hidden rounded-md border bg-background/45 p-2",
+                  current ? "border-hud-cyan/25" : "border-border/60",
+                )}
+              >
+                <span
+                  className={cn(
+                    "absolute inset-y-0 left-0 w-[2px]",
+                    t >= 3 ? "bg-hud-green" : t === 2 ? "bg-hud-cyan" : t === 1 ? "bg-hud-cyan/40" : "bg-border",
+                  )}
+                  aria-hidden
+                />
+                <div className="flex items-center justify-between gap-2 pl-1.5">
                   <span className="text-[10px] tracking-[0.18em] text-muted-foreground">{SLOT_LABEL[slot]}</span>
-                  <Chip tone={(current?.tier ?? 1) >= 3 ? "green" : (current?.tier ?? 1) === 2 ? "cyan" : "dim"}>
-                    TIER {current?.tier ?? 0}
-                  </Chip>
+                  <Chip tone={t >= 3 ? "green" : t === 2 ? "cyan" : "dim"}>TIER {t}</Chip>
                 </div>
-                <p className="mt-0.5 text-xs text-foreground">{current?.name ?? "Empty"}</p>
+                <p className="mt-0.5 pl-1.5 text-xs text-foreground">{current?.name ?? "Empty"}</p>
+                <div className="mt-1.5 flex gap-4 pl-1.5">
+                  <TechSpec label="BAY" value={slot.toUpperCase()} />
+                  <TechSpec
+                    label="STATUS"
+                    value={current ? "ONLINE" : "EMPTY"}
+                    tone={current ? "green" : "amber"}
+                  />
+                  <TechSpec label="SPARES" value={`${alternatives.length}`} />
+                </div>
                 {alternatives.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
+                  <div className="mt-2 flex flex-wrap gap-1 pl-1.5">
                     {alternatives.map((alt) => (
                       <HudButton key={alt.id} size="sm" tone="ghost" onClick={() => dispatch({ type: "install", id: alt.id })}>
                         {alt.name}
@@ -137,7 +160,7 @@ export default function RigTab() {
             );
           })}
         </div>
-      </Panel>
+      </TerminalWindow>
     </div>
   );
 }
