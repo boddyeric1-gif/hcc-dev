@@ -100,16 +100,7 @@ export default function BootScreen({ onDone }: { onDone: (handle: string) => voi
           <div className="pointer-events-none absolute inset-3 rounded-full border border-hud-cyan/15" />
           <div className="pointer-events-none absolute inset-6 animate-soft-pulse rounded-full border border-hud-cyan/10" />
 
-          {useRaster ? (
-            <img
-              src="/hcc-mark.png"
-              alt=""
-              className="relative z-10 h-[72%] w-[72%] object-contain drop-shadow-[0_0_22px_rgba(56,225,255,0.45)]"
-              onError={() => setUseRaster(false)}
-            />
-          ) : (
-            <HccMark className="relative z-10 h-[72%] w-[72%]" />
-          )}
+          <HccMark className="relative z-10 h-[72%] w-[72%] drop-shadow-[0_0_22px_rgba(56,225,255,0.45)]" />
         </div>
 
         <h1 className="font-display text-3xl tracking-[0.36em] text-hud-cyan text-glow sm:text-4xl">
