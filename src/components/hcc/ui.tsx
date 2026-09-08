@@ -13,16 +13,27 @@ export function Panel({
   right?: ReactNode;
 }) {
   return (
-    <section className={cn("panel relative overflow-hidden", className)}>
+    <section className={cn("panel bracket-frame relative overflow-hidden", className)}>
       {label && (
-        <header className="flex items-center justify-between border-b border-hud-cyan/15 px-3 py-2">
-          <h2 className="text-[10px] tracking-[0.24em] text-hud-cyan/90">{label}</h2>
-          {right}
+        <header className="panel-titlebar flex items-center justify-between gap-2 px-3 py-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-hud-cyan/70 shadow-[0_0_8px_0] shadow-hud-cyan/60" />
+            <h2 className="truncate text-[10px] tracking-[0.24em] text-hud-cyan/90">{label}</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            {right}
+            <span className="hidden items-center gap-1 sm:flex" aria-hidden>
+              <span className="h-[2px] w-2.5 bg-hud-cyan/35" />
+              <span className="h-2 w-2 border border-hud-cyan/35" />
+              <span className="h-2 w-2 rotate-45 border border-hud-cyan/25" />
+            </span>
+          </div>
         </header>
       )}
       {children}
     </section>
   );
+
 }
 
 export function Bar({
