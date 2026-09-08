@@ -48,7 +48,7 @@ export default function OperatorBadge({
   badgeId,
   className,
 }: {
-  badgeId?: string | null;
+  badgeId?: string | null | undefined;
   className?: string;
 }) {
   const id = badgeId ?? "badge-rookie";
