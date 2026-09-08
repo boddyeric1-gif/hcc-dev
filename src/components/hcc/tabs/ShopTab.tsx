@@ -23,7 +23,8 @@ import {
 } from "lucide-react";
 
 import { Chip, HudButton } from "../ui";
-import { HardwarePlate, SpecBlock, TerminalWindow } from "../hud";
+import { SpecBlock, TerminalWindow } from "../hud";
+import ProductArt from "../ProductArt";
 import StarsShop from "../StarsShop";
 import { audio } from "@/lib/hcc/audio";
 import { useGame, useStats } from "@/lib/hcc/store";
@@ -325,21 +326,28 @@ export default function ShopTab() {
                     locked ? "opacity-55" : "hover:shadow-[0_0_36px_-16px] hover:shadow-hud-cyan/60",
                   )}
                 >
-                  {/* PRODUCT VISUAL — procedural plate + live spec badges */}
-                  <div className="relative h-32 shrink-0 overflow-hidden border-b border-hud-cyan/20 bg-background/50">
+                  {/* PRODUCT VISUAL — item illustration + live spec badges */}
+                  <div className="relative h-36 shrink-0 overflow-hidden border-b border-hud-cyan/20 bg-background/50">
                     <div className="pointer-events-none absolute inset-0 hud-grid opacity-40" aria-hidden />
-                    <SpecBlock specs={specsFor(it)} />
-                    <HardwarePlate
-                      tier={it.tier}
-                      tone={plateTone}
-                      glyph={<Glyph className="size-7" strokeWidth={1.4} />}
+                    <div
+                      className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full blur-2xl opacity-25"
+                      style={{ background: `var(--hud-${plateTone})` }}
+                      aria-hidden
                     />
+                    <SpecBlock specs={specsFor(it)} />
+                    <div className="absolute inset-0 flex items-center justify-center p-3">
+                      <ProductArt item={it} tone={plateTone} className="max-h-full w-auto" />
+                    </div>
                     <div className="absolute left-2 top-2 flex flex-wrap gap-1">
                       {count > 0 && <Chip tone="cyan">×{count}</Chip>}
                       {installed && <Chip tone="green">FITTED</Chip>}
                       {owned && !installed && !it.stackable && <Chip tone="dim">OWNED</Chip>}
                       {locked && <Chip tone="red">RANK {(it.rank ?? 0) + 1}</Chip>}
                     </div>
+                    <span className="absolute bottom-1.5 left-2 flex items-center gap-1 text-[8px] tracking-[0.2em] text-muted-foreground">
+                      <Glyph className="size-3" strokeWidth={1.6} />
+                      {(it.slot ? (SLOT_LABEL[it.slot] ?? it.slot) : (it.mining?.kind ?? it.category)).toUpperCase()}
+                    </span>
                   </div>
 
                   <div className="flex flex-1 flex-col p-3">
