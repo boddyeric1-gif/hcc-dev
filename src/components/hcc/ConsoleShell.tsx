@@ -255,22 +255,24 @@ function ShellInner() {
                 key={t.id}
                 type="button"
                 tabIndex={focused ? -1 : 0}
+                data-active={active}
                 onClick={() => {
                   audio.sfx("tab");
                   dispatch({ type: "tab", tab: t.id });
                 }}
                 className={cn(
-                  "flex min-w-[52px] flex-1 shrink-0 flex-col items-center gap-0.5 rounded-md border px-2 py-1.5 transition-all duration-200",
+                  "hud-nav-item flex min-w-[52px] flex-1 shrink-0 flex-col items-center gap-0.5 rounded-md border px-2 py-1.5 transition-all duration-200",
                   active
                     ? t.id === "mining"
-                      ? "border-hud-green/55 bg-hud-green/12 text-hud-green shadow-[0_0_18px_-6px] shadow-hud-green/30"
-                      : "border-hud-cyan/55 bg-hud-cyan/12 text-hud-cyan shadow-[0_0_18px_-6px] shadow-hud-cyan/30"
+                      ? "border-hud-green/40 bg-hud-green/10 text-hud-green"
+                      : "border-hud-cyan/40 bg-hud-cyan/10 text-hud-cyan text-glow"
                     : "border-transparent text-muted-foreground hover:bg-secondary/40 hover:text-foreground",
                 )}
               >
                 <Icon className="size-4" strokeWidth={1.6} />
                 <span className="text-[9px] tracking-[0.16em]">{t.label}</span>
               </button>
+
             );
           })}
         </div>
