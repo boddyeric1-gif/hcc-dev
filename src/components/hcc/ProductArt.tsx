@@ -3,6 +3,8 @@
  * Each drawing is chosen from the real catalogue entry (slot / mining kind /
  * tier) — no per-item hardcoding, no game logic, no invented stats.
  */
+import type { ReactElement } from "react";
+
 import type { Item } from "@/lib/hcc/types";
 import { cn } from "@/lib/utils";
 
@@ -375,7 +377,7 @@ const Perk = ({ c, tier }: ArtProps) => (
 
 /* ---------- selector ---------- */
 
-function drawingFor(it: Item): (p: ArtProps) => JSX.Element {
+function drawingFor(it: Item): (p: ArtProps) => ReactElement {
   if (it.slot) {
     switch (it.slot) {
       case "cpu":
