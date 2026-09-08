@@ -129,7 +129,7 @@ export function Chip({
   tone = "dim",
 }: {
   children: ReactNode;
-  tone?: "dim" | "cyan" | "green" | "amber" | "red";
+  tone?: "dim" | "cyan" | "green" | "amber" | "red" | "violet";
 }) {
   const tones: Record<string, string> = {
     dim: "border-border text-muted-foreground",
@@ -137,6 +137,7 @@ export function Chip({
     green: "border-hud-green/45 text-hud-green",
     amber: "border-hud-amber/45 text-hud-amber",
     red: "border-hud-red/45 text-hud-red",
+    violet: "border-hud-violet/45 text-hud-violet",
   };
   return (
     <span className={cn("rounded border px-1.5 py-0.5 text-[9px] tracking-[0.16em] uppercase", tones[tone])}>
