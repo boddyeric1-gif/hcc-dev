@@ -1,7 +1,8 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { ClientOnly } from "@tanstack/react-router";
 
-import { Bar, Chip, HudButton, Panel, Sparkline, Stat } from "../ui";
+import { Bar, Chip, HudButton, Sparkline, Stat } from "../ui";
+import { TerminalWindow } from "../hud";
 import SceneBrightness from "../SceneBrightness";
 import type { MiningVisual } from "../three/MiningScene";
 import { useGame } from "@/lib/hcc/store";
@@ -107,7 +108,7 @@ export default function MiningTab() {
         </div>
       </section>
 
-      <Panel label="MARKET" className="p-3">
+      <TerminalWindow title="MARKET" tone="green" bodyClassName="p-3">
         <div className="grid grid-cols-3 gap-2">
           {COIN_LIST.map((c) => (
             <button
@@ -178,9 +179,9 @@ export default function MiningTab() {
             Order size walks the book — {(sq.slip * 100).toFixed(2)}% slippage on top of the spread.
           </p>
         )}
-      </Panel>
+      </TerminalWindow>
 
-      <Panel label="MARKET WIRE" className="p-3">
+      <TerminalWindow title="MARKET WIRE" tone="green" bodyClassName="p-3">
         {news.length === 0 && <p className="text-[11px] text-muted-foreground">Wire quiet. No active shocks.</p>}
         <ul className="space-y-2">
           {news.map((e) => (
@@ -201,9 +202,9 @@ export default function MiningTab() {
             </li>
           ))}
         </ul>
-      </Panel>
+      </TerminalWindow>
 
-      <Panel label="FARM TELEMETRY" className="p-3">
+      <TerminalWindow title="FARM TELEMETRY" tone="green" bodyClassName="p-3">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Stat label="HASHRATE" value={`${read.effectiveHash.toFixed(0)} MH/s`} hint={`raw ${Math.round(read.rawHash)}`} />
           <Stat label="DRAW" value={`${(read.watts / 1000).toFixed(2)} kW`} hint={`cap ${(read.capacityW / 1000).toFixed(0)} kW`} tone="amber" />
@@ -241,9 +242,9 @@ export default function MiningTab() {
             );
           })}
         </div>
-      </Panel>
+      </TerminalWindow>
 
-      <Panel label="YIELD BREAKDOWN" className="p-3">
+      <TerminalWindow title="YIELD BREAKDOWN" tone="green" bodyClassName="p-3">
         <ul className="space-y-1 text-[11px]">
           <li className="flex justify-between gap-2">
             <span className="text-muted-foreground">Base hashrate (installed units)</span>
@@ -291,9 +292,9 @@ export default function MiningTab() {
           Coins are mined continuously and credited on sale; the day figure is net cr/h × 24 at current prices and
           difficulty, so it drifts with the market.
         </p>
-      </Panel>
+      </TerminalWindow>
 
-      <Panel label="POWER CONTRACT" className="p-3">
+      <TerminalWindow title="POWER CONTRACT" tone="green" bodyClassName="p-3">
         <div className="flex flex-wrap items-center gap-2 text-[10px]">
           <Chip tone={read.contract.peak ? "red" : "green"}>{read.contract.peak ? "PEAK WINDOW" : "OFF-PEAK"}</Chip>
           <span className="text-muted-foreground">
@@ -344,9 +345,9 @@ export default function MiningTab() {
             );
           })}
         </div>
-      </Panel>
+      </TerminalWindow>
 
-      <Panel label="INSTALLED UNITS" className="p-3">
+      <TerminalWindow title="INSTALLED UNITS" tone="green" bodyClassName="p-3">
         {units.length === 0 && (
           <p className="text-[11px] text-muted-foreground">
             No mining hardware. Buy shelves, rigs and cooling from the SHOP.
@@ -412,7 +413,7 @@ export default function MiningTab() {
             );
           })}
         </div>
-      </Panel>
+      </TerminalWindow>
     </div>
   );
 }
