@@ -35,7 +35,7 @@ export default function BootScreen({ onDone }: { onDone: (handle: string) => voi
   const [stage, setStage] = useState<"boot" | "ready" | "auth">("boot");
   const [authStep, setAuthStep] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [useRaster, setUseRaster] = useState(true);
+  
 
   const handle = sanitise(user?.username ?? user?.first_name ?? "") || "GHOSTHAND";
   const bootPct = Math.min(100, Math.round((shown / LINES.length) * 100));
